@@ -1,0 +1,15 @@
+# The mounted home accumulates tool caches (.bun, .npm), pi runtime state
+# (auth.json, sessions, installed packages), and the user's own projects.
+# hako commits ONLY its shipped opinions; everything else is ignored.
+
+# Ignore everything by default...
+*
+
+# ...except this file and the shipped pi opinions.
+!.gitignore
+!.pi/
+.pi/*
+!.pi/agent/
+.pi/agent/*
+!.pi/agent/settings.json
+!.pi/agent/AGENTS.md

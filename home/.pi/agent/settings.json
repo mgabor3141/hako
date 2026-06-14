@@ -1,0 +1,15 @@
+{
+  "packages": ["npm:pi-librarian", "npm:pi-github"],
+  "defaultProjectTrust": "always",
+  "treeFilterMode": "no-tools",
+  "terminal": { "clearOnShrink": true },
+  "shellCommandPrefix": "export PI_ROOT=\"$(dirname \"$(readlink -f \"$(command -v pi)\")\")/..\"",
+  "quietStartup": true,
+  "steeringMode": "all",
+  "retry": {
+    "enabled": true,
+    "maxRetries": 16,
+    "baseDelayMs": 2000,
+    "provider": { "maxRetryDelayMs": 0 }
+  }
+}

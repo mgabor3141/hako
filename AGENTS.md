@@ -29,6 +29,13 @@ Never commit secrets, tokens, or auth.
   (`.pi/agent/settings.json`, `.pi/agent/AGENTS.md`); its `.gitignore`
   whitelists only those and ignores all runtime state and the user's projects.
 
+## Decisions
+
+Load-bearing, reversible choices are recorded as lightweight ADRs in
+[`docs/adr/`](docs/adr/). Read them before re-litigating why hako is Debian,
+mounts the whole home, or holds no credentials. When you make or reverse such a
+choice, add or supersede an ADR — don't bury the rationale in a commit alone.
+
 ## The rule that bites
 
 All of `home/` is bind-mounted over `/home/agent`, so **anything installed into

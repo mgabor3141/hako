@@ -1,0 +1,28 @@
+# hako — Phase 1: a single opinionated pi agent in a container.
+#
+# No credentials here: pi handles its own auth (bring your own provider),
+# authenticated once inside the container and persisted in the `home` volume.
+#
+# Phase 2 will add a `broker` service on a private network (no host ports),
+# and the agent will reach tools through it — see docs/.
+
+services:
+  hako:
+    build: ./container
+    container_name: hako
+    # tini (PID 1) -> entrypoint.sh -> sleep infinity; gmuxd autostarts if installed.
+    restart: unless-stopped
+    volumes:
+      # Persists pi auth, gmux sessions, applied config, and your work across restarts.
+      - home:/home/devbox
+      # Optional: mount a host project dir to work on it directly.
+      # - ./workspace:/home/devbox/workspace
+    ports:
+      # gmux web UI — attach to live agent sessions from a browser.
+      # TODO: confirm gmuxd's port.
+      - "8790:8790"
+    # NOTE: deliberately NO docker socket and NO upstream credentials.
+    #       The agent is a sandbox; nothing privileged is mounted in.
+
+volumes:
+  home:

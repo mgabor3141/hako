@@ -23,8 +23,10 @@ services:
       SHELL: /usr/bin/zsh
     ports:
       # gmux web UI — reachable only from this machine's browser (localhost).
+      # Host port is 8791 (not gmux's default 8790) so a gmux running on the
+      # host can coexist; gmuxd still listens on 8790 inside the container.
       # Remote/phone access is a deliberate opt-in via gmux's Tailscale listener.
-      - "127.0.0.1:8790:8790"
+      - "127.0.0.1:8791:8790"
     healthcheck:
       # gmuxd answers / with a 303 -> /auth/login; curl -f treats 3xx as success.
       test: ["CMD-SHELL", "curl -fsS http://localhost:8790/ >/dev/null"]

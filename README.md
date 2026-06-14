@@ -10,13 +10,13 @@ host or your keys. Customize by forking.
 
 ```sh
 git clone https://github.com/mgabor3141/hako && cd hako
-docker compose up -d                  # builds the image, starts gmux on :8790
+docker compose up -d                  # builds the image, starts gmux on :8791
 docker compose exec hako gmuxd auth   # prints a login URL + token
-# open http://localhost:8790, authenticate, then:
+# open http://localhost:8791, authenticate, then:
 docker compose exec hako gmux pi      # launch the agent (authenticate it once)
 ```
 
-Your pi sessions show up live at <http://localhost:8790>.
+Your pi sessions show up live at <http://localhost:8791>.
 
 **Windows / WSL2:** run from inside your WSL2 distro (Docker Desktop WSL
 integration enabled), and **clone into the Linux home (`~`), not `/mnt/c/...`**
@@ -26,7 +26,7 @@ integration enabled), and **clone into the Linux home (`~`), not `/mnt/c/...`**
 
 - **pi** — the coding agent, preconfigured with hako's opinions
   (`agent/.pi/agent/`). Bring your own provider; hako ships no credentials.
-- **gmux** — see and attach to every session from your browser (`:8790`,
+- **gmux** — see and attach to every session from your browser (`:8791`,
   localhost-only, token-authed).
 - A Debian dev box (git, ripgrep, fd, bun, node, …) baked outside the agent's
   home, so the whole home (`agent/`) is yours.

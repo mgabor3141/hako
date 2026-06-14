@@ -50,7 +50,7 @@ lives in the home and fights the mount.)
 | Kind  | Value | Why |
 |-------|-------|-----|
 | mount | `./agent → /home/agent` | the agent's entire home: pi config + projects |
-| port  | `127.0.0.1:8790 → 8790` | gmux web UI (loopback only, token-authed) |
+| port  | `127.0.0.1:8791 → 8790` | gmux web UI (loopback only, token-authed); host 8791 so a host gmux can coexist |
 | env   | `GMUXD_LISTEN=0.0.0.0`  | gmuxd binds loopback by default; in a container it must bind all interfaces or the published port reaches nothing |
 
 Add ports/mounts here as needed (e.g. a dev server the in-container agent

@@ -4,22 +4,12 @@
     "type": "file",
     "source": "/home/agent/.config/fastfetch/hako.txt",
     "color": { "1": "cyan" },
-    "padding": { "top": 1, "right": 3 }
+    "padding": { "top": 0, "right": 3 }
   },
-  "display": { "separator": "  " },
+  "display": { "separator": "   " },
   "modules": [
-    { "type": "custom", "format": "an opinionated, sandboxed coding agent box" },
-    "break",
-    { "type": "os",     "key": "OS     " },
-    { "type": "kernel", "key": "Kernel " },
-    { "type": "shell",  "key": "Shell  " },
-    { "type": "uptime", "key": "Uptime " },
-    { "type": "memory", "key": "Memory " },
-    "break",
-    { "type": "custom", "format": "Browser   http://localhost:8791" },
-    { "type": "custom", "format": "Agent     run:  gmux pi" },
-    { "type": "custom", "format": "Source    github.com/mgabor3141/hako" },
-    "break",
-    { "type": "colors", "symbol": "circle" }
+    { "type": "shell", "key": "Shell  " },
+    { "type": "command", "key": "Connect", "text": "if [ -n \"$GMUX\" ]; then echo 'type  pi  to launch the agent'; else echo 'http://localhost:8791   (token: gmuxd auth)'; fi" },
+    { "type": "command", "key": "Source ", "text": "echo github.com/mgabor3141/hako" }
   ]
 }

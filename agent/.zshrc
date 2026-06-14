@@ -30,6 +30,9 @@ alias ll='ls -lah --color=auto'
 alias la='ls -A --color=auto'
 alias grep='grep --color=auto'
 
+# launch the agent through gmux, so the session shows up in the dashboard
+alias pi='gmux pi'
+
 # --- fish-like ghost-text suggestions from your history ---
 source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh 2>/dev/null
 

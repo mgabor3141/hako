@@ -4,6 +4,8 @@ hako is an opinionated, sandboxed, ready-to-run home for a coding agent: **pi**
 in a container, a Debian dev box, and **gmux** for browser access, shipped as a
 `git clone && docker compose up`.
 
+Canonical repo: <https://github.com/mgabor3141/hako>
+
 ## Two agents, two jobs
 
 - **You** run on the user's host, in this repo. Your job is to **configure

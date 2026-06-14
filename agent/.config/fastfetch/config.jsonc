@@ -18,6 +18,7 @@
     "break",
     { "type": "custom", "format": "Browser   http://localhost:8790" },
     { "type": "custom", "format": "Agent     run:  gmux pi" },
+    { "type": "custom", "format": "Source    github.com/mgabor3141/hako" },
     "break",
     { "type": "colors", "symbol": "circle" }
   ]

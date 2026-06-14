@@ -26,15 +26,15 @@ integration enabled), and **clone into the Linux home (`~`), not `/mnt/c/...`**
 ## What's inside
 
 - **pi** — the coding agent, preconfigured with hako's opinions
-  (`home/.pi/agent/`). Bring your own provider; hako ships no credentials.
+  (`agent/.pi/agent/`). Bring your own provider; hako ships no credentials.
 - **gmux** — see and attach to every session from your browser (`:8790`,
   localhost-only, token-authed).
 - A Debian dev box (git, ripgrep, fd, bun, node, …) baked outside the agent's
-  home, so the whole home (`home/`) is yours.
+  home, so the whole home (`agent/`) is yours.
 
 ## How it's wired
 
-- `home/` is bind-mounted as the agent's entire home — config, projects,
+- `agent/` is bind-mounted as the agent's entire home — config, projects,
   scratch. Nothing on your host (including `~/.pi`) is touched.
 - The agent holds **no host credentials**: the boundary is the absence of
   secrets, not behavior restrictions.
@@ -42,7 +42,7 @@ integration enabled), and **clone into the Linux home (`~`), not `/mnt/c/...`**
 
 ## Customizing
 
-Edit `home/.pi/agent/settings.json` (live) or `container/Dockerfile` (rebuild).
+Edit `agent/.pi/agent/settings.json` (live) or `container/Dockerfile` (rebuild).
 hako is meant to be forked and `git pull`ed — opinions surface as merge
 conflicts, not silent clobbers. The configuring agent's guide is
 [`AGENTS.md`](./AGENTS.md); design decisions are in [`docs/`](./docs/).

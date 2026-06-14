@@ -6,7 +6,7 @@
 How does hako deliver its config and persist agent state, hermetically?
 
 ## Decision
-Bind-mount the repo's `home/` as the agent's entire `/home/agent`. Ship config
+Bind-mount the repo's `agent/` as the agent's entire `/home/agent`. Ship config
 as plain files. Bake all tooling **outside** the home (`/opt`, `/usr`). pi uses
 its default `~/.pi/agent` — no env override.
 

@@ -1,6 +1,6 @@
 # hako — Phase 1: one opinionated pi agent in a hermetic container.
 #
-# A single bind mount: the clone's home/ becomes the agent's entire home.
+# A single bind mount: the clone's agent/ becomes the agent's entire home.
 # Everything hako needs (tools, pi, bun) is baked outside the home, so the
 # mount shadows nothing. No host ~/.pi is touched. No credentials here — pi
 # brings its own auth.
@@ -11,7 +11,7 @@ services:
     container_name: hako
     restart: unless-stopped
     volumes:
-      - ./home:/home/agent
+      - ./agent:/home/agent
     environment:
       # gmuxd binds 127.0.0.1 by default; inside a container it must listen on
       # all interfaces so the published port can reach it. TCP still requires

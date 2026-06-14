@@ -5,8 +5,9 @@
 # Ignore everything by default...
 *
 
-# ...except this file and the shipped pi opinions.
+# ...except this file, the shell config, and the shipped pi opinions.
 !.gitignore
+!.zshrc
 !.pi/
 .pi/*
 !.pi/agent/

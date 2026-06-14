@@ -1,7 +1,6 @@
 # hako
 
-**箱** — an opinionated, sandboxed home for a coding agent, in one command.
-*hako* is Japanese for "box"; *hakoniwa* (箱庭) means sandbox.
+an opinionated, sandboxed coding agent config
 
 Clone it, bring your own agent credentials, and you get **pi** running in a
 container with browser access via **gmux** — without handing the agent your
@@ -44,7 +43,7 @@ integration enabled), and **clone into the Linux home (`~`), not `/mnt/c/...`**
 
 Edit `agent/.pi/agent/settings.json` (live) or `container/Dockerfile` (rebuild).
 hako is meant to be forked and `git pull`ed — opinions surface as merge
-conflicts, not silent clobbers. The configuring agent's guide is
+conflicts. The configuring agent's guide is
 [`AGENTS.md`](./AGENTS.md); design decisions are in [`docs/`](./docs/).
 
 ## Roadmap

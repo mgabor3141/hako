@@ -13,9 +13,11 @@ ENV BUN_INSTALL=/opt/bun \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates curl git ripgrep fd-find fzf less nano sudo tini unzip passwd \
+      zsh zsh-autosuggestions zsh-syntax-highlighting \
  && rm -rf /var/lib/apt/lists/* \
  && ln -sf "$(command -v fdfind)" /usr/local/bin/fd \
- && useradd -m -s /bin/bash -u 1000 agent \
+ # zsh is the human's interactive shell; pi always runs /bin/bash itself.
+ && useradd -m -s /usr/bin/zsh -u 1000 agent \
  && echo 'agent ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/agent
 
 # Node.js — pi runs on node (its bin is `#!/usr/bin/env node`). NodeSource is
@@ -35,6 +37,10 @@ RUN curl -fsSL https://bun.sh/install | bash \
 # /usr/local/bin (OUTSIDE the home, or the bind mount would shadow them). The
 # installer auto-detects amd64/arm64.
 RUN curl -sSfL https://gmux.app/install.sh | GMUX_INSTALL_DIR=/usr/local/bin sh
+
+# starship: a fast, git-aware prompt. Single static binary in /usr/local/bin
+# (outside the home). Shell-agnostic; the shipped ~/.zshrc inits it.
+RUN curl -sS https://starship.rs/install.sh | sh -s -- -y -b /usr/local/bin
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh

@@ -18,6 +18,9 @@ services:
       # gmux's bearer token, and the port below is published only to this
       # machine's loopback.
       GMUXD_LISTEN: "0.0.0.0"
+      # The human's interactive shell (gmux web terminal + `exec`). pi ignores
+      # this and always runs /bin/bash, so agent-suggested commands stay bash.
+      SHELL: /usr/bin/zsh
     ports:
       # gmux web UI — reachable only from this machine's browser (localhost).
       # Remote/phone access is a deliberate opt-in via gmux's Tailscale listener.

@@ -12,4 +12,20 @@ services:
     restart: unless-stopped
     volumes:
       - ./home:/home/agent
-    # gmux web UI port comes with the connectivity layer (Phase 1.5).
+    environment:
+      # gmuxd binds 127.0.0.1 by default; inside a container it must listen on
+      # all interfaces so the published port can reach it. TCP still requires
+      # gmux's bearer token, and the port below is published only to this
+      # machine's loopback.
+      GMUXD_LISTEN: "0.0.0.0"
+    ports:
+      # gmux web UI — reachable only from this machine's browser (localhost).
+      # Remote/phone access is a deliberate opt-in via gmux's Tailscale listener.
+      - "127.0.0.1:8790:8790"
+    healthcheck:
+      # gmuxd answers / with a 303 -> /auth/login; curl -f treats 3xx as success.
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8790/ >/dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

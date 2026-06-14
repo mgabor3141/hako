@@ -1,14 +1,14 @@
 # syntax=docker/dockerfile:1
 #
-# hako agent image. Everything hako needs lives OUTSIDE the user home (/opt,
-# /usr, /nix-free) so the entire home can be bind-mounted from the clone
-# without shadowing anything. The mounted home is 100% the user's: pi config,
+# hako agent image. Everything hako needs lives OUTSIDE the user home (in /opt
+# and /usr) so the entire home can be bind-mounted from the clone without
+# shadowing anything. The mounted home is 100% the user's: pi config,
 # projects, scratch. pi uses its default ~/.pi/agent (no env override).
 
 FROM debian:stable-slim
 
 ENV BUN_INSTALL=/opt/bun \
-    PATH=/opt/bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    PATH=/home/agent/.local/bin:/opt/bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
     DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -29,7 +29,12 @@ RUN curl -fsSL https://bun.sh/install | bash \
  && /opt/bun/bin/bun install -g @earendil-works/pi-coding-agent \
  && chmod -R a+rX /opt/bun \
  # login shells re-run /etc/profile (resets PATH); keep /opt/bun/bin for them too
- && echo 'export PATH=/opt/bun/bin:$PATH' > /etc/profile.d/hako-path.sh
+ && echo 'export PATH="$HOME/.local/bin:/opt/bun/bin:$PATH"' > /etc/profile.d/hako-path.sh
+
+# gmux (connectivity): two static, dependency-free Go binaries. Installed to
+# /usr/local/bin (OUTSIDE the home, or the bind mount would shadow them). The
+# installer auto-detects amd64/arm64.
+RUN curl -sSfL https://gmux.app/install.sh | GMUX_INSTALL_DIR=/usr/local/bin sh
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
@@ -37,4 +42,6 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 USER agent
 WORKDIR /home/agent
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
-CMD ["sleep", "infinity"]
+# gmuxd runs in the foreground as the container's main service; `gmuxd run` is
+# gmux's documented systemd/Docker entry point. Users exec in and `gmux pi`.
+CMD ["gmuxd", "run"]

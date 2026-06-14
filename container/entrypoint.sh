@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
-# tini is PID 1. Start gmuxd in the background if it's installed (connectivity
-# layer, added later), then keep the container alive. Nothing here touches the
-# bind-mounted home beyond what the agent does itself.
+# tini is PID 1 and reaps the agent's child processes. This wrapper is a seam
+# for seeding mutable home state later; for now it just hands off to the CMD,
+# which runs gmuxd in the foreground as the container's main service.
 set -euo pipefail
-
-if command -v gmuxd >/dev/null 2>&1; then
-  gmuxd start || true
-fi
 
 exec "$@"

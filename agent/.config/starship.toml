@@ -1,0 +1,32 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+# Two-line prompt: context on top, a clean caret to type next to. No nerd fonts,
+# so it renders anywhere (including the gmux browser terminal).
+format = """
+$directory$git_branch$git_status$cmd_duration
+$character"""
+
+add_newline = true
+
+[directory]
+style = "bold cyan"
+truncation_length = 3
+truncate_to_repo = true
+
+[git_branch]
+symbol = ""
+format = "[$branch]($style) "
+style = "bold purple"
+
+[git_status]
+style = "bold yellow"
+format = '([$all_status$ahead_behind]($style)) '
+
+[cmd_duration]
+min_time = 2000
+format = "[took $duration]($style) "
+style = "dimmed yellow"
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"

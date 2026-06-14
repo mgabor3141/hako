@@ -13,7 +13,7 @@ ENV BUN_INSTALL=/opt/bun \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates curl git ripgrep fd-find fzf less nano sudo tini unzip passwd \
-      zsh zsh-autosuggestions zsh-syntax-highlighting \
+      zsh zsh-autosuggestions zsh-syntax-highlighting fastfetch \
  && rm -rf /var/lib/apt/lists/* \
  && ln -sf "$(command -v fdfind)" /usr/local/bin/fd \
  # zsh is the human's interactive shell; pi always runs /bin/bash itself.

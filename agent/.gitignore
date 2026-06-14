@@ -14,3 +14,10 @@
 .pi/agent/*
 !.pi/agent/settings.json
 !.pi/agent/AGENTS.md
+!.config/
+.config/*
+!.config/starship.toml
+!.config/fastfetch/
+.config/fastfetch/*
+!.config/fastfetch/config.jsonc
+!.config/fastfetch/hako.txt

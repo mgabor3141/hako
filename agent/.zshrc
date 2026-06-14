@@ -6,6 +6,11 @@ unsetopt nomatch             # a glob that matches nothing is passed through (li
 setopt   interactivecomments # allow `# comments` on the command line
 unsetopt beep
 
+# --- welcome banner on a fresh terminal (skip nested/subshells) ---
+if [[ $SHLVL -le 1 ]] && command -v fastfetch >/dev/null; then
+  fastfetch
+fi
+
 # --- history: large, deduplicated, shared across sessions ---
 HISTFILE=~/.zsh_history
 HISTSIZE=50000

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "type": "file",
+    "source": "/home/agent/.config/fastfetch/hako.txt",
+    "color": { "1": "cyan" },
+    "padding": { "top": 1, "right": 3 }
+  },
+  "display": { "separator": "  " },
+  "modules": [
+    { "type": "custom", "format": "an opinionated, sandboxed coding agent box" },
+    "break",
+    { "type": "os",     "key": "OS     " },
+    { "type": "kernel", "key": "Kernel " },
+    { "type": "shell",  "key": "Shell  " },
+    { "type": "uptime", "key": "Uptime " },
+    { "type": "memory", "key": "Memory " },
+    "break",
+    { "type": "custom", "format": "Browser   http://localhost:8790" },
+    { "type": "custom", "format": "Agent     run:  gmux pi" },
+    "break",
+    { "type": "colors", "symbol": "circle" }
+  ]
+}

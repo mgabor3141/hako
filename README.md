@@ -1,73 +1,54 @@
 # hako
 
-**箱** — an opinionated, sandboxed agent harness you run in one command.
-*hako* is Japanese for "box"; *hakoniwa* (箱庭, "boxed garden") is the Japanese
-word for a sandbox — which is exactly what this is.
+**箱** — an opinionated, sandboxed home for a coding agent, in one command.
+*hako* is Japanese for "box"; *hakoniwa* (箱庭) means sandbox.
 
-hako is to [pi](https://github.com/) what a curated config is to a bare editor:
-a strong set of opinions on top of pi, **plus** a containerized environment,
-**plus** [gmux](https://github.com/gmuxapp) for connectivity — and, later, a
-governed MCP layer. Clone it, bring your own pi auth, `docker compose up`, and
-you have a working agent. Customize by forking.
-
-## What's in the box
-
-| Layer | What it is |
-|---|---|
-| **Opinions** | A curated pi configuration (settings, skills, prompts) |
-| **Environment** | A reproducible container (devbox toolchain + pi + gmux) |
-| **Connectivity** | gmux — attach to live agent sessions from a browser |
-| **Governance** *(later)* | MCP broker + mcpeel skills, so agents reach tools without holding upstream credentials |
-
-hako **integrates**, it doesn't absorb: the container image lives here, but the
-broker and the mcpeel skills are referenced/pinned, not vendored — they stay
-reusable on their own.
-
-## Authentication
-
-hako ships **no credentials and assumes no provider.** Auth is entirely pi's
-job — bring your own (any provider). You authenticate pi *once* inside the
-container; it persists in the home volume across restarts. hako never sees a
-key.
+Clone it, bring your own agent credentials, and you get **pi** running in a
+container with browser access via **gmux** — without handing the agent your
+host or your keys. Customize by forking.
 
 ## Quickstart
 
 ```sh
-git clone https://github.com/<you>/hako && cd hako
-docker compose up -d           # builds the image, starts the agent
-docker compose exec hako bash  # shell in
-# one-time, inside the container:
-pi auth                        # authenticate pi with your provider of choice
-gmux pi                        # start an agent session (attach via browser)
+git clone https://github.com/mgabor3141/hako && cd hako
+docker compose up -d                  # builds the image, starts gmux on :8790
+docker compose exec hako gmuxd auth   # prints a login URL + token
+# open http://localhost:8790, authenticate, then:
+docker compose exec hako gmux pi      # launch the agent (authenticate it once)
 ```
 
-State (pi auth, gmux sessions, your work) lives in a named volume, so restarts
-don't lose it.
+Your pi sessions show up live at <http://localhost:8790>.
+
+**Windows / WSL2:** run from inside your WSL2 distro (Docker Desktop WSL
+integration enabled), and **clone into the Linux home (`~`), not `/mnt/c/...`**
+— bind mounts and permissions only behave on the native filesystem.
+
+## What's inside
+
+- **pi** — the coding agent, preconfigured with hako's opinions
+  (`home/.pi/agent/`). Bring your own provider; hako ships no credentials.
+- **gmux** — see and attach to every session from your browser (`:8790`,
+  localhost-only, token-authed).
+- A Debian dev box (git, ripgrep, fd, bun, node, …) baked outside the agent's
+  home, so the whole home (`home/`) is yours.
+
+## How it's wired
+
+- `home/` is bind-mounted as the agent's entire home — config, projects,
+  scratch. Nothing on your host (including `~/.pi`) is touched.
+- The agent holds **no host credentials**: the boundary is the absence of
+  secrets, not behavior restrictions.
+- Config is live; image changes need `docker compose up -d --build`.
+
+## Customizing
+
+Edit `home/.pi/agent/settings.json` (live) or `container/Dockerfile` (rebuild).
+hako is meant to be forked and `git pull`ed — opinions surface as merge
+conflicts, not silent clobbers. The configuring agent's guide is
+[`AGENTS.md`](./AGENTS.md); design decisions are in [`docs/`](./docs/).
 
 ## Roadmap
 
 - **Phase 1 — pi + container + gmux** *(current)*: clone-and-up opinionated pi.
-- **Phase 2 — governed tools**: pin the MCP broker + mcpeel skills; agents call
-  tools through a broker that holds the credentials, so the agent environment
-  holds none.
-
-## Repository layout
-
-```
-container/      the agent image (Dockerfile, entrypoint) — canonical home
-config/         the opinionated chezmoi-applied config (pi settings, devbox.json, shell glue)
-compose.yaml    the deployment: one agent service, persistent home volume
-docs/           architecture decisions
-```
-
-## How customization works
-
-The container bootstraps by applying *this repo* as its config
-(`chezmoi init --apply <this-repo>`). To make it yours, **fork hako and point
-the bootstrap at your fork** — edit the pi settings, the package list, whatever.
-No credentials live in the repo, so forks are safe to make public.
-
-## Design notes
-
-See [`docs/`](./docs/) for the architecture decisions (the three-repo split, the
-agent-holds-no-credentials boundary, why the broker is separate, etc.).
+- **Phase 2 — governed tools**: a pinned MCP broker + skills, so agents reach
+  tools through a broker that holds the credentials and the agent holds none.

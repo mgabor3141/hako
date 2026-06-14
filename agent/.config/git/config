@@ -1,0 +1,29 @@
+# hako's opinionated git defaults. No identity is shipped — set your own:
+#   git config --global user.name  "Your Name"
+#   git config --global user.email "you@example.com"
+
+[init]
+	defaultBranch = main
+[pull]
+	rebase = true
+[push]
+	autoSetupRemote = true
+[fetch]
+	prune = true
+[rebase]
+	autoStash = true
+[merge]
+	conflictStyle = zdiff3
+[diff]
+	algorithm = histogram
+	colorMoved = default
+[color]
+	ui = auto
+[column]
+	ui = auto
+[branch]
+	sort = -committerdate
+[help]
+	autocorrect = prompt
+[core]
+	pager = less -FRX

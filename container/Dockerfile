@@ -9,6 +9,7 @@ FROM debian:stable-slim
 
 ENV BUN_INSTALL=/opt/bun \
     PATH=/home/agent/.local/bin:/opt/bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    BASH_ENV=/home/agent/.config/direnv/bash-env.sh \
     DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -41,6 +42,49 @@ RUN curl -sSfL https://gmux.app/install.sh | GMUX_INSTALL_DIR=/usr/local/bin sh
 # starship: a fast, git-aware prompt. Single static binary in /usr/local/bin
 # (outside the home). Shell-agnostic; the shipped ~/.zshrc inits it.
 RUN curl -sS https://starship.rs/install.sh | sh -s -- -y -b /usr/local/bin
+
+# Extra CLI goodies + general utilities + Python (agents lean on inline python).
+# ffmpeg + imagemagick are the heavy part of this layer.
+# --no-install-recommends stays (keeps pip from dragging in build-essential).
+# Keep a base font so imagemagick can render text; patch for applying diffs.
+# (Reading PDFs is covered by poppler-utils' pdftotext; imagemagick PDF
+# rendering needs ghostscript ~ +50 pkgs, so add that in a fork if you want it.)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      eza bat jq shellcheck direnv zoxide patch \
+      imagemagick fonts-dejavu-core poppler-utils sqlite3 \
+      wget rsync zip zstd xz-utils file procps openssh-client \
+      python3 python3-pip python3-venv \
+ && rm -rf /var/lib/apt/lists/* \
+ && ln -sf "$(command -v batcat)" /usr/local/bin/bat
+
+# ffmpeg: a stripped static build (full codecs, no system deps) instead of the
+# 207-package apt tree that drags in X11/GL we never use headless. ~1/3 the size
+# of unstripped builds. ffmpeg + ffprobe only. Arch-detected.
+RUN set -eux; \
+    case "$(dpkg --print-architecture)" in \
+      amd64) a=amd64 ;; arm64) a=arm64 ;; *) echo "unsupported arch"; exit 1 ;; \
+    esac; \
+    tmp="$(mktemp -d)"; \
+    curl -fsSL "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-${a}-static.tar.xz" \
+      | tar -xJ -C "$tmp"; \
+    d="$(find "$tmp" -maxdepth 1 -type d -name 'ffmpeg-*-static')"; \
+    install -m 0755 "$d/ffmpeg" "$d/ffprobe" /usr/local/bin/; \
+    rm -rf "$tmp"; \
+    ffmpeg -version | head -1
+
+# jujutsu (jj): optional VCS, not in apt. Static musl release binary, arch-detected.
+RUN set -eux; \
+    case "$(dpkg --print-architecture)" in \
+      amd64) a=x86_64 ;; arm64) a=aarch64 ;; *) echo "unsupported arch"; exit 1 ;; \
+    esac; \
+    v="$(curl -fsSL https://api.github.com/repos/jj-vcs/jj/releases/latest \
+         | grep -oE '"tag_name": *"[^"]+"' | head -1 | grep -oE 'v[0-9][^"]*')"; \
+    tmp="$(mktemp -d)"; \
+    curl -fsSL "https://github.com/jj-vcs/jj/releases/download/${v}/jj-${v}-${a}-unknown-linux-musl.tar.gz" \
+      | tar -xz -C "$tmp"; \
+    install -m 0755 "$(find "$tmp" -maxdepth 2 -name jj -type f | head -1)" /usr/local/bin/jj; \
+    rm -rf "$tmp"; \
+    jj --version
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh

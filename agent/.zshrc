@@ -25,13 +25,24 @@ autoload -Uz compinit && compinit
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
 zstyle ':completion:*' menu select
 
-# --- a few friendly, transparent aliases (plain commands underneath) ---
-alias ll='ls -lah --color=auto'
-alias la='ls -A --color=auto'
+# --- eza: a friendlier ls (git-aware, tree). No icons (nerd font may be absent) ---
+alias ls='eza --group-directories-first'
+alias ll='eza -lah --git --group-directories-first'
+alias la='eza -a  --group-directories-first'
+alias lt='eza --tree --level=2 --group-directories-first'
 alias grep='grep --color=auto'
 
 # launch the agent through gmux, so the session shows up in the dashboard
 alias pi='gmux pi'
+
+# --- bat: syntax-highlighted, colored man pages ---
+export MANROFFOPT="-c"
+export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+
+# --- tool integrations (no-op if a tool is missing) ---
+command -v direnv >/dev/null && eval "$(direnv hook zsh)"
+command -v zoxide >/dev/null && eval "$(zoxide init zsh)"            # `z <dir>` jumps
+command -v fzf    >/dev/null && source <(fzf --zsh) 2>/dev/null      # Ctrl-R history, Ctrl-T files, Alt-C cd
 
 # --- fish-like ghost-text suggestions from your history ---
 source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh 2>/dev/null

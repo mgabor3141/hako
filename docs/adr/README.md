@@ -12,3 +12,4 @@ supersession chain); the status line notes what it supersedes.
 - [0006](0006-gmux-wiring.md) — gmux container wiring (bind address, port, token)
 - [0007](0007-host-side-broker.md) — Host-side MCP broker (proposed)
 - [0008](0008-pinning-and-integrity.md) — Reproducibility and supply-chain integrity by pinning
+- [0009](0009-backups-optional-addon.md) — Backups are an opt-in documented add-on

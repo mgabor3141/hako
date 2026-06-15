@@ -64,6 +64,12 @@ and `git pull`ed — opinions, including the pinned `mise.lock`, surface as merg
 conflicts. The configuring agent's guide is
 [`AGENTS.md`](./AGENTS.md); design decisions are in [`docs/`](./docs/).
 
+## Backups (optional)
+
+Not on by default. To snapshot the agent home to a repo the agent can't reach,
+follow [`docs/backups.md`](./docs/backups.md) (a restic sidecar) — or just hand
+that file to your agent.
+
 ## Roadmap
 
 - **Phase 1 — pi + container + gmux** *(current)*: clone-and-up opinionated pi.

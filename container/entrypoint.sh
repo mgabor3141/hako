@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# tini is PID 1 and reaps children. This wrapper reconciles the home dev
-# toolchain (mise) to the committed lockfile, then hands off to the CMD, which
-# runs gmuxd in the foreground as the container's main service.
+# tini is PID 1 and reaps children. This kicks off the home dev-toolchain
+# reconcile (mise) as a *gmux session* -- so it shows up in the dashboard and
+# can be watched -- then hands off to the CMD (gmuxd, the container's main
+# service).
 #
 # The toolchain lives in the mounted home (not the image), so a cold clone must
-# install it on first start. We do that in the BACKGROUND so the gmux web UI
-# comes up immediately; a readiness flag lets the shell banner report progress.
+# install it on first start. gmuxd has to be up before a session can launch, so
+# we wait for it in the background, then run the reconcile from the home dir.
 # Subsequent starts are fast (mise install is idempotent).
 set -euo pipefail
 
@@ -13,14 +14,21 @@ state="$HOME/.local/state/hako"
 mkdir -p "$state"
 rm -f "$state/toolchain-ready" "$state/toolchain-failed"
 
-if command -v mise >/dev/null 2>&1; then
+if command -v mise >/dev/null 2>&1 && command -v gmux >/dev/null 2>&1; then
   (
-    if mise install --yes >"$state/bootstrap.log" 2>&1; then
-      mise reshim >/dev/null 2>&1 || true
-      touch "$state/toolchain-ready"
-    else
-      touch "$state/toolchain-failed"
-    fi
+    # wait for gmuxd (started below by exec) to be accepting sessions
+    for _ in $(seq 1 150); do gmuxd status >/dev/null 2>&1 && break; sleep 0.2; done
+    cd "$HOME"
+    gmux bash -lc '
+      if mise install --yes; then
+        mise reshim >/dev/null 2>&1 || true
+        touch "$HOME/.local/state/hako/toolchain-ready"
+        echo; echo "hako: dev toolchain ready."
+      else
+        touch "$HOME/.local/state/hako/toolchain-failed"
+        echo; echo "hako: toolchain install FAILED -- re-run: mise install"
+      fi
+    '
   ) &
 fi
 

@@ -24,11 +24,8 @@
 !.config/git/
 .config/git/*
 !.config/git/config
-!.config/direnv/
-.config/direnv/*
-!.config/direnv/bash-env.sh
-!.config/direnv/direnv.toml
 !.config/mise/
 .config/mise/*
 !.config/mise/config.toml
 !.config/mise/mise.lock
+!.config/mise/bash-env.sh

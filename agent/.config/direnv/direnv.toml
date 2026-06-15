@@ -1,5 +1,0 @@
-[global]
-# Fail loudly on broken .envrc, keep the diff quiet, warn on slow loads.
-strict_env = true
-hide_env_diff = true
-warn_timeout = "60s"

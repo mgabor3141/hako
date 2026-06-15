@@ -28,7 +28,7 @@ ARG FFMPEG_SHA256_ARM64=f4149bb2b0784e30e99bdda85471c9b5930d3402014e934a5098b41d
 # Shims dir first: the agent's non-interactive bash finds mise-managed tools
 # without activation. Interactive zsh additionally runs `mise activate`.
 ENV PATH=/home/agent/.local/share/mise/shims:/home/agent/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-    BASH_ENV=/home/agent/.config/direnv/bash-env.sh \
+    BASH_ENV=/home/agent/.config/mise/bash-env.sh \
     DEBIAN_FRONTEND=noninteractive
 
 # OS tier: base + shells + a few expected system utilities. No dev toolchain.

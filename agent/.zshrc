@@ -10,9 +10,13 @@ unsetopt beep
 if [[ $SHLVL -le 1 ]] && command -v fastfetch >/dev/null; then
   fastfetch
 fi
-# first-run hint while the dev toolchain installs in the background
-if [[ $SHLVL -le 1 && ! -f ~/.local/state/hako/toolchain-ready ]]; then
-  print -P "%F{yellow}hako:%f installing the dev toolchain (first run); tools appear as they finish. Watch with %F{cyan}tail -f ~/.local/state/hako/bootstrap.log%f"
+# first-run hint while the dev toolchain installs (as a gmux session)
+if [[ $SHLVL -le 1 ]]; then
+  if [[ -f ~/.local/state/hako/toolchain-failed ]]; then
+    print -P "%F{red}hako:%f toolchain install failed — re-run %F{cyan}mise install%f"
+  elif [[ ! -f ~/.local/state/hako/toolchain-ready ]]; then
+    print -P "%F{yellow}hako:%f installing the dev toolchain (first run); watch it in the gmux dashboard. Tools appear as they finish."
+  fi
 fi
 
 # --- history: large, deduplicated, shared across sessions ---
@@ -46,8 +50,7 @@ export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 # --- mise: dev toolchain manager (puts node/bun/python/pi/CLI tools on PATH) ---
 command -v mise >/dev/null && eval "$(mise activate zsh)"
 
-# --- tool integrations (no-op if a tool is missing) ---
-command -v direnv >/dev/null && eval "$(direnv hook zsh)"
+# --- tool integrations (no-op if a tool is missing; mise handles project env) ---
 command -v zoxide >/dev/null && eval "$(zoxide init zsh)"            # `z <dir>` jumps
 command -v fzf    >/dev/null && source <(fzf --zsh) 2>/dev/null      # Ctrl-R history, Ctrl-T files, Alt-C cd
 

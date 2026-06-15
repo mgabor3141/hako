@@ -6,16 +6,34 @@ unsetopt nomatch             # a glob that matches nothing is passed through (li
 setopt   interactivecomments # allow `# comments` on the command line
 unsetopt beep
 
-# --- welcome banner on a fresh terminal (skip nested/subshells) ---
+# --- welcome greeter on a fresh terminal (skip nested/subshells) ---
+# A small static banner: the hako box, a hint, and the source, all centered.
+_hako_greet() {
+  local cols=${COLUMNS:-80} pad sp l
+  local -a box=('╭───────────────╮' '│    h a k o    │' '╰───────────────╯')
+  local hint='type  hako  for keybindings & handy commands'
+  local src='github.com/mgabor3141/hako'
+  print
+  for l in $box; do
+    (( pad = (cols - ${#l}) / 2 )); (( pad < 0 )) && pad=0; printf -v sp '%*s' $pad ''
+    print -P "${sp}%F{cyan}${l}%f"
+  done
+  print
+  (( pad = (cols - ${#hint}) / 2 )); (( pad < 0 )) && pad=0; printf -v sp '%*s' $pad ''
+  print -P "${sp}%F{8}type  %F{cyan}hako%F{8}  for keybindings & handy commands%f"
+  (( pad = (cols - ${#src}) / 2 )); (( pad < 0 )) && pad=0; printf -v sp '%*s' $pad ''
+  print -P "${sp}%F{8}${src}%f"
+  print
+}
+
 if [[ $SHLVL -le 1 ]]; then
-  command -v fastfetch >/dev/null && fastfetch
-  # first-run hint while the dev toolchain installs (as a gmux session)
+  _hako_greet
+  # first-run status while the dev toolchain installs (as a gmux session)
   if [[ -f ~/.local/state/hako/toolchain-failed ]]; then
-    print -P "%F{red}hako:%f toolchain install failed — re-run %F{cyan}mise install%f"
+    print -P "%F{red}hako:%f toolchain install failed; re-run %F{cyan}mise install%f"
   elif [[ ! -f ~/.local/state/hako/toolchain-ready ]]; then
-    print -P "%F{yellow}hako:%f installing the dev toolchain (first run); watch it in the gmux dashboard. Tools appear as they finish."
+    print -P "%F{yellow}hako:%f installing the dev toolchain (first run); watch it in the gmux dashboard."
   fi
-  print -P "%F{8}tip: type %F{cyan}hako%F{8} for keybindings & handy commands%f"
 fi
 
 # --- history: large, deduplicated, shared across sessions ---
@@ -46,13 +64,13 @@ alias pi='gmux pi'
 
 # --- hako: a quick reference for the goodies that aren't easy to discover ---
 hako() {
-  print -P '%F{cyan}%Bhako quick reference%b%f   (the non-obvious goodies)
+  print -P '%F{cyan}%Bhako goodies reference%b%f
 
 %F{yellow}search & history (fzf)%f
   %BCtrl-R%b    fuzzy-search your command history
   %BCtrl-T%b    fuzzy-pick a file path onto the command line
   %BAlt-C%b     fuzzy-cd into a subdirectory
-  %B->%b / End  accept the grey autosuggestion (from history)
+  %B→%b / End   accept the grey autosuggestion (from history)
 
 %F{yellow}getting around%f
   %Bz <name>%b    jump to a directory you visit often (zoxide)
@@ -67,9 +85,8 @@ hako() {
 %F{yellow}agent & tooling%f
   %Bpi%b          launch the coding agent (opens a gmux session)
   %Bmise ls%b     list installed tools   %Bmise use -g <tool>@<ver>%b  add/bump one
-  %Bjj st%b       version control (jujutsu)
 
-%F{8}browser dashboard: http://localhost:8791   (token: gmuxd auth)%f'
+%F{8}more goodies and full docs: %F{cyan}github.com/mgabor3141/hako%F{8}  (see README.md)%f'
 }
 
 # --- bat: syntax-highlighted, colored man pages ---

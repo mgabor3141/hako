@@ -17,10 +17,6 @@
 !.config/
 .config/*
 !.config/starship.toml
-!.config/fastfetch/
-.config/fastfetch/*
-!.config/fastfetch/config.jsonc
-!.config/fastfetch/hako.txt
 !.config/git/
 .config/git/*
 !.config/git/config

@@ -33,6 +33,19 @@ integration enabled), and **clone into the Linux home (`~`), not `/mnt/c/...`**
   and pinned by a lockfile. A thin, pinned OS image carries only the base,
   gmux, ffmpeg, and mise; the toolchain installs into the home on first start.
 
+## Handy in the shell
+
+The human shell (zsh) ships some niceties worth knowing. Run `hako` inside the
+container for the full, colorized list:
+
+- `Ctrl-R` fuzzy history search, `Ctrl-T` file picker, `Alt-C` fuzzy `cd` (fzf)
+- `→` / `End` accepts the grey autosuggestion from your history
+- `z <name>` jumps to a frequent directory (zoxide); typing a bare dir name `cd`s into it
+- `ls`/`ll`/`la`/`lt`/`l.` are [eza](https://eza.rocks); `bat` and `man` are syntax-highlighted
+
+pi itself always runs plain `/bin/bash` with stock `ls`/`grep`, so commands it
+hands you paste-and-run unchanged.
+
 ## How it's wired
 
 - `agent/` is bind-mounted as the agent's entire home — config, projects,

@@ -44,7 +44,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       procps file patch \
       rsync zip openssh-client sqlite3 \
       imagemagick poppler-utils fonts-dejavu-core \
-      zsh zsh-autosuggestions zsh-syntax-highlighting fastfetch \
+      zsh zsh-autosuggestions zsh-syntax-highlighting \
  && rm -rf /var/lib/apt/lists/* \
  # zsh is the human's interactive shell; pi always runs /bin/bash itself.
  && useradd -m -s /usr/bin/zsh -u 1000 agent \

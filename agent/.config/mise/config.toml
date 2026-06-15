@@ -7,17 +7,10 @@
 # commit the mise.lock change.
 
 [tools]
-# runtimes
+# runtimes (node is kept as a general tool; pi itself runs under bun, below)
 node   = "22"
 bun    = "latest"
 python = "3.12"
-
-# pi, the coding agent (npm backend, installed with bun for speed). Update from
-# inside the container with:
-#   mise use -g "npm:@earendil-works/pi-coding-agent@<version>"
-# which rewrites this file + the lock, persists in the home, and shows as a
-# git diff (your audit/promote surface).
-"npm:@earendil-works/pi-coding-agent" = { version = "latest", depends = ["node", "bun"] }
 
 # CLI toolchain (aqua-backed: GitHub releases + checksums)
 eza        = "latest"
@@ -30,6 +23,19 @@ shellcheck = "latest"
 zoxide     = "latest"
 jj         = "latest"
 starship   = "latest"
+
+# pi, the coding agent (npm backend, installed AND run with bun). pi ships a
+# `#!/usr/bin/env node` shebang; the postinstall flips it to bun so the mise
+# shim runs pi under bun. Update from inside the container with:
+#   mise use -g "npm:@earendil-works/pi-coding-agent@<version>"
+# which rewrites this file + the lock, persists in the home, shows as a git diff.
+[tools."npm:@earendil-works/pi-coding-agent"]
+version = "latest"
+depends = ["bun"]
+postinstall = '''
+f="$(readlink -f "$MISE_TOOL_INSTALL_PATH/bin/pi")"
+sed -i '1s|.*|#!/usr/bin/env bun|' "$f"
+'''
 
 [settings]
 # Record exact versions + checksums in mise.lock and install --locked.

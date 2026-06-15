@@ -33,11 +33,13 @@ autoload -Uz compinit && compinit
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
 zstyle ':completion:*' menu select
 
-# --- eza: a friendlier ls (git-aware, tree). No icons (nerd font may be absent) ---
-alias ls='eza --group-directories-first'
-alias ll='eza -lah --git --group-directories-first'
-alias la='eza -a  --group-directories-first'
-alias lt='eza --tree --level=2 --group-directories-first'
+# --- eza: a friendlier ls (git-aware, tree). Matches the host dotfiles' flags.
+# No --icons: the gmux web terminal usually lacks a Nerd Font (icons -> boxes). ---
+alias ls='eza -al --group-directories-first --git'      # long + all (preferred)
+alias ll='eza -l  --group-directories-first --git'      # long, no dotfiles
+alias la='eza -a  --group-directories-first'            # all, grid
+alias lt='eza -aT --level=2 --group-directories-first'  # tree, 2 levels
+alias l.="eza -a | grep -e '^\.'"                        # dotfiles only
 alias grep='grep --color=auto'
 
 # launch the agent through gmux, so the session shows up in the dashboard

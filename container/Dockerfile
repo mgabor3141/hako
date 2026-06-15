@@ -2,11 +2,12 @@
 #
 # hako agent image -- the OS (authoritative) tier.
 #
-# This image is deliberately thin: base system, shells, sudo, tini, the gmux
-# connectivity layer, ffmpeg, and the `mise` tool manager. The DEV TOOLCHAIN
-# (node, bun, python, pi, and the CLI tools) is NOT baked here -- mise installs
-# it into the mounted home at container start, pinned by agent/.config/mise/
-# config.lock. See container/entrypoint.sh and docs/adr/0004.
+# This image is deliberately thin: base system + common file/media utilities,
+# shells, sudo, tini, the gmux connectivity layer, ffmpeg, and the `mise` tool
+# manager. The DEV TOOLCHAIN (node, bun, python, pi, and the CLI tools) is NOT
+# baked here -- mise installs it into the mounted home at container start,
+# pinned by agent/.config/mise/mise.lock. See container/entrypoint.sh and
+# docs/adr/0004.
 #
 # Everything baked here lives OUTSIDE the home, so the whole-home bind mount
 # shadows nothing. Every external download is version- and checksum-pinned.
@@ -31,10 +32,14 @@ ENV PATH=/home/agent/.local/share/mise/shims:/home/agent/.local/bin:/usr/local/s
     BASH_ENV=/home/agent/.config/mise/bash-env.sh \
     DEBIAN_FRONTEND=noninteractive
 
-# OS tier: base + shells + a few expected system utilities. No dev toolchain.
+# OS tier: base + shells + expected system/file/media utilities. No dev
+# toolchain (that is mise's job). --no-install-recommends keeps this lean
+# (notably stops imagemagick/poppler from dragging in X11, ghostscript, etc.).
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      ca-certificates curl git xz-utils less sudo tini passwd \
+      ca-certificates curl wget git xz-utils zstd less sudo tini passwd \
       procps file patch \
+      rsync zip openssh-client sqlite3 \
+      imagemagick poppler-utils fonts-dejavu-core \
       zsh zsh-autosuggestions zsh-syntax-highlighting fastfetch \
  && rm -rf /var/lib/apt/lists/* \
  # zsh is the human's interactive shell; pi always runs /bin/bash itself.

@@ -30,6 +30,10 @@ ARG FFMPEG_SHA256_ARM64=f4149bb2b0784e30e99bdda85471c9b5930d3402014e934a5098b41d
 # without activation. Interactive zsh additionally runs `mise activate`.
 ENV PATH=/home/agent/.local/share/mise/shims:/home/agent/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
     BASH_ENV=/home/agent/.config/mise/bash-env.sh \
+    # UTF-8 locale (glibc built-in, no locales package). Without this the shell
+    # runs in the C locale and miscounts multibyte prompt glyphs (e.g. starship's
+    # caret), which breaks zle: backspace stops early, completion garbles.
+    LANG=C.UTF-8 \
     DEBIAN_FRONTEND=noninteractive
 
 # OS tier: base + shells + expected system/file/media utilities. No dev

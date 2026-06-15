@@ -1,0 +1,36 @@
+# hako's curated dev toolchain. mise installs these into the mounted home
+# (~/.local/share/mise) at container start, pinned to exact versions and
+# checksums by mise.lock next to this file.
+#
+# This file is git-tracked: edits surface as diffs on `git pull` (opinions,
+# not silent clobbers). To bump versions deliberately: `mise upgrade` then
+# commit the mise.lock change.
+
+[tools]
+# runtimes
+node   = "22"
+bun    = "latest"
+python = "3.12"
+
+# pi, the coding agent (npm backend). Update from inside the container with:
+#   mise use -g "npm:@earendil-works/pi-coding-agent@<version>"
+# which rewrites this file + the lock, persists in the home, and shows as a
+# git diff (your audit/promote surface).
+"npm:@earendil-works/pi-coding-agent" = { version = "latest", depends = ["node"] }
+
+# CLI toolchain (aqua-backed: GitHub releases + checksums)
+eza        = "latest"
+bat        = "latest"
+ripgrep    = "latest"
+fd         = "latest"
+fzf        = "latest"
+jq         = "latest"
+shellcheck = "latest"
+zoxide     = "latest"
+direnv     = "latest"
+jj         = "latest"
+starship   = "latest"
+
+[settings]
+# Record exact versions + checksums in mise.lock and install --locked.
+lockfile = true

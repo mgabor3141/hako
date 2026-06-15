@@ -10,6 +10,10 @@ unsetopt beep
 if [[ $SHLVL -le 1 ]] && command -v fastfetch >/dev/null; then
   fastfetch
 fi
+# first-run hint while the dev toolchain installs in the background
+if [[ $SHLVL -le 1 && ! -f ~/.local/state/hako/toolchain-ready ]]; then
+  print -P "%F{yellow}hako:%f installing the dev toolchain (first run); tools appear as they finish. Watch with %F{cyan}tail -f ~/.local/state/hako/bootstrap.log%f"
+fi
 
 # --- history: large, deduplicated, shared across sessions ---
 HISTFILE=~/.zsh_history
@@ -38,6 +42,9 @@ alias pi='gmux pi'
 # --- bat: syntax-highlighted, colored man pages ---
 export MANROFFOPT="-c"
 export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+
+# --- mise: dev toolchain manager (puts node/bun/python/pi/CLI tools on PATH) ---
+command -v mise >/dev/null && eval "$(mise activate zsh)"
 
 # --- tool integrations (no-op if a tool is missing) ---
 command -v direnv >/dev/null && eval "$(direnv hook zsh)"

@@ -1,93 +1,91 @@
 # syntax=docker/dockerfile:1
 #
-# hako agent image. Everything hako needs lives OUTSIDE the user home (in /opt
-# and /usr) so the entire home can be bind-mounted from the clone without
-# shadowing anything. The mounted home is 100% the user's: pi config,
-# projects, scratch. pi uses its default ~/.pi/agent (no env override).
+# hako agent image -- the OS (authoritative) tier.
+#
+# This image is deliberately thin: base system, shells, sudo, tini, the gmux
+# connectivity layer, ffmpeg, and the `mise` tool manager. The DEV TOOLCHAIN
+# (node, bun, python, pi, and the CLI tools) is NOT baked here -- mise installs
+# it into the mounted home at container start, pinned by agent/.config/mise/
+# config.lock. See container/entrypoint.sh and docs/adr/0004.
+#
+# Everything baked here lives OUTSIDE the home, so the whole-home bind mount
+# shadows nothing. Every external download is version- and checksum-pinned.
 
-FROM debian:stable-slim
+FROM debian:trixie-slim
 
-ENV BUN_INSTALL=/opt/bun \
-    PATH=/home/agent/.local/bin:/opt/bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+# Pinned, checksum-verified downloads. Bump deliberately (a visible commit).
+ARG MISE_VERSION=v2026.6.10
+ARG MISE_SHA256_X64=656131b5d995493c18b06c2135afda193f94a1848e0a4d1cb07a1161859d0c80
+ARG MISE_SHA256_ARM64=f39ef86c888efe7323c1e510a8d14614af43d030acb3d56cb1af47e66b87ef28
+
+ARG GMUX_VERSION=v1.6.0
+ARG GMUX_SHA256_AMD64=fa6732e3703dbab789ab3dc452d43bcdb75871cad4ae5b1f6c4b86aa651af378
+ARG GMUX_SHA256_ARM64=5cd6182e7c6b991e989ca3ebcb3fd144fbac978ec28ba017597581d4bf76fd2c
+
+ARG FFMPEG_SHA256_AMD64=abda8d77ce8309141f83ab8edf0596834087c52467f6badf376a6a2a4c87cf67
+ARG FFMPEG_SHA256_ARM64=f4149bb2b0784e30e99bdda85471c9b5930d3402014e934a5098b41d0f7201b1
+
+# Shims dir first: the agent's non-interactive bash finds mise-managed tools
+# without activation. Interactive zsh additionally runs `mise activate`.
+ENV PATH=/home/agent/.local/share/mise/shims:/home/agent/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
     BASH_ENV=/home/agent/.config/direnv/bash-env.sh \
     DEBIAN_FRONTEND=noninteractive
 
+# OS tier: base + shells + a few expected system utilities. No dev toolchain.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      ca-certificates curl git ripgrep fd-find fzf less nano sudo tini unzip passwd \
+      ca-certificates curl git xz-utils less sudo tini passwd \
+      procps file patch \
       zsh zsh-autosuggestions zsh-syntax-highlighting fastfetch \
  && rm -rf /var/lib/apt/lists/* \
- && ln -sf "$(command -v fdfind)" /usr/local/bin/fd \
  # zsh is the human's interactive shell; pi always runs /bin/bash itself.
  && useradd -m -s /usr/bin/zsh -u 1000 agent \
  && echo 'agent ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/agent
 
-# Node.js — pi runs on node (its bin is `#!/usr/bin/env node`). NodeSource is
-# portable across amd64/arm64. Lands in /usr (system), not the user home.
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
- && apt-get install -y --no-install-recommends nodejs \
- && rm -rf /var/lib/apt/lists/*
-
-# bun + pi installed to /opt (outside the home), world-readable/executable.
-RUN curl -fsSL https://bun.sh/install | bash \
- && /opt/bun/bin/bun install -g @earendil-works/pi-coding-agent \
- # drop bun's download cache (most is hardlinked into the install, so this only
- # frees orphaned entries, but it keeps the layer tidy)
- && rm -rf /opt/bun/install/cache \
- && chmod -R a+rX /opt/bun \
- # login shells re-run /etc/profile (resets PATH); keep /opt/bun/bin for them too
- && echo 'export PATH="$HOME/.local/bin:/opt/bun/bin:$PATH"' > /etc/profile.d/hako-path.sh
-
-# gmux (connectivity): two static, dependency-free Go binaries. Installed to
-# /usr/local/bin (OUTSIDE the home, or the bind mount would shadow them). The
-# installer auto-detects amd64/arm64.
-RUN curl -sSfL https://gmux.app/install.sh | GMUX_INSTALL_DIR=/usr/local/bin sh
-
-# starship: a fast, git-aware prompt. Single static binary in /usr/local/bin
-# (outside the home). Shell-agnostic; the shipped ~/.zshrc inits it.
-RUN curl -sS https://starship.rs/install.sh | sh -s -- -y -b /usr/local/bin
-
-# Extra CLI goodies + general utilities + Python (agents lean on inline python).
-# ffmpeg + imagemagick are the heavy part of this layer.
-# --no-install-recommends stays (keeps pip from dragging in build-essential).
-# Keep a base font so imagemagick can render text; patch for applying diffs.
-# (Reading PDFs is covered by poppler-utils' pdftotext; imagemagick PDF
-# rendering needs ghostscript ~ +50 pkgs, so add that in a fork if you want it.)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-      eza bat jq shellcheck direnv zoxide patch \
-      imagemagick fonts-dejavu-core poppler-utils sqlite3 \
-      wget rsync zip zstd xz-utils file procps openssh-client \
-      python3 python3-pip python3-venv \
- && rm -rf /var/lib/apt/lists/* \
- && ln -sf "$(command -v batcat)" /usr/local/bin/bat
-
-# ffmpeg: a stripped static build (full codecs, no system deps) instead of the
-# 207-package apt tree that drags in X11/GL we never use headless. ~1/3 the size
-# of unstripped builds. ffmpeg + ffprobe only. Arch-detected.
+# mise: single pinned, checksum-verified binary. Manages the home toolchain.
 RUN set -eux; \
     case "$(dpkg --print-architecture)" in \
-      amd64) a=amd64 ;; arm64) a=arm64 ;; *) echo "unsupported arch"; exit 1 ;; \
+      amd64) a=x64;   sha="$MISE_SHA256_X64" ;; \
+      arm64) a=arm64; sha="$MISE_SHA256_ARM64" ;; \
+      *) echo "unsupported arch"; exit 1 ;; \
+    esac; \
+    curl -fsSL -o /usr/local/bin/mise "https://github.com/jdx/mise/releases/download/${MISE_VERSION}/mise-${MISE_VERSION}-linux-${a}"; \
+    echo "${sha}  /usr/local/bin/mise" | sha256sum -c -; \
+    chmod 0755 /usr/local/bin/mise; \
+    mise --version
+
+# gmux (connectivity): pinned, checksum-verified release archive (gmux + gmuxd).
+# gmuxd is the container's main service; it can only be updated by rebuild.
+RUN set -eux; \
+    arch="$(dpkg --print-architecture)"; \
+    case "$arch" in \
+      amd64) sha="$GMUX_SHA256_AMD64" ;; \
+      arm64) sha="$GMUX_SHA256_ARM64" ;; \
+      *) echo "unsupported arch"; exit 1 ;; \
     esac; \
     tmp="$(mktemp -d)"; \
-    curl -fsSL "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-${a}-static.tar.xz" \
-      | tar -xJ -C "$tmp"; \
+    curl -fsSL -o "$tmp/gmux.tgz" "https://github.com/gmuxapp/gmux/releases/download/${GMUX_VERSION}/gmux_${GMUX_VERSION#v}_linux_${arch}.tar.gz"; \
+    echo "${sha}  $tmp/gmux.tgz" | sha256sum -c -; \
+    tar -xzf "$tmp/gmux.tgz" -C "$tmp"; \
+    install -m 0755 "$tmp/gmux" "$tmp/gmuxd" /usr/local/bin/; \
+    rm -rf "$tmp"; \
+    gmuxd version
+
+# ffmpeg: stripped static build (OS tier -- it is heavy and awkward in mise).
+# ffmpeg + ffprobe only. Pinned by hash; bump when johnvansickle rolls a release.
+RUN set -eux; \
+    case "$(dpkg --print-architecture)" in \
+      amd64) a=amd64; sha="$FFMPEG_SHA256_AMD64" ;; \
+      arm64) a=arm64; sha="$FFMPEG_SHA256_ARM64" ;; \
+      *) echo "unsupported arch"; exit 1 ;; \
+    esac; \
+    tmp="$(mktemp -d)"; \
+    curl -fsSL -o "$tmp/ff.tar.xz" "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-${a}-static.tar.xz"; \
+    echo "${sha}  $tmp/ff.tar.xz" | sha256sum -c -; \
+    tar -xJf "$tmp/ff.tar.xz" -C "$tmp"; \
     d="$(find "$tmp" -maxdepth 1 -type d -name 'ffmpeg-*-static')"; \
     install -m 0755 "$d/ffmpeg" "$d/ffprobe" /usr/local/bin/; \
     rm -rf "$tmp"; \
     ffmpeg -version | head -1
-
-# jujutsu (jj): optional VCS, not in apt. Static musl release binary, arch-detected.
-RUN set -eux; \
-    case "$(dpkg --print-architecture)" in \
-      amd64) a=x86_64 ;; arm64) a=aarch64 ;; *) echo "unsupported arch"; exit 1 ;; \
-    esac; \
-    v="$(curl -fsSL https://api.github.com/repos/jj-vcs/jj/releases/latest \
-         | grep -oE '"tag_name": *"[^"]+"' | head -1 | grep -oE 'v[0-9][^"]*')"; \
-    tmp="$(mktemp -d)"; \
-    curl -fsSL "https://github.com/jj-vcs/jj/releases/download/${v}/jj-${v}-${a}-unknown-linux-musl.tar.gz" \
-      | tar -xz -C "$tmp"; \
-    install -m 0755 "$(find "$tmp" -maxdepth 2 -name jj -type f | head -1)" /usr/local/bin/jj; \
-    rm -rf "$tmp"; \
-    jj --version
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
@@ -95,6 +93,6 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 USER agent
 WORKDIR /home/agent
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
-# gmuxd runs in the foreground as the container's main service; `gmuxd run` is
-# gmux's documented systemd/Docker entry point. Users exec in and `gmux pi`.
+# gmuxd runs in the foreground as the container's main service. The entrypoint
+# kicks off the home-toolchain install in the background first.
 CMD ["gmuxd", "run"]

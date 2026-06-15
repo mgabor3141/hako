@@ -1,9 +1,9 @@
 # hako — Phase 1: one opinionated pi agent in a hermetic container.
 #
 # A single bind mount: the clone's agent/ becomes the agent's entire home.
-# Everything hako needs (tools, pi, bun) is baked outside the home, so the
-# mount shadows nothing. No host ~/.pi is touched. No credentials here — pi
-# brings its own auth.
+# The OS image is thin and pinned; the dev toolchain (node, bun, pi, CLI tools)
+# is installed into the home by mise on first start. No host ~/.pi is touched,
+# and no credentials live here; pi brings its own auth.
 
 services:
   hako:

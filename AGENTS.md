@@ -31,9 +31,11 @@ Never commit secrets, tokens, or auth.
   background (`mise install`), then execs the CMD `gmuxd run` (foreground).
 - `compose.yaml` — ports, mounts, env (below).
 - `agent/` — the bind-mounted home. Ships the opinions: pi config
-  (`.pi/agent/`), shell/git/direnv config, and the **toolchain manifest +
+  (`.pi/agent/`), shell/git/starship config, and the **toolchain manifest +
   lock** (`.config/mise/config.toml`, `.config/mise/mise.lock`). Its `.gitignore`
   whitelists only those and ignores all installs, runtime state, and projects.
+  Note: pi rewrites `.pi/agent/settings.json` at runtime (e.g.
+  `lastChangelogVersion`); `git restore` it before committing config changes.
 
 ## Decisions
 

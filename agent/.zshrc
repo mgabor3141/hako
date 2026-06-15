@@ -6,6 +6,10 @@ unsetopt nomatch             # a glob that matches nothing is passed through (li
 setopt   interactivecomments # allow `# comments` on the command line
 unsetopt beep
 
+# OSC 8 terminal hyperlink: _osc8 <url> <text> -> clickable <text> where supported
+# (terminals without OSC 8 just show the text). BEL-terminated for xterm.js.
+_osc8() { printf '\033]8;;%s\a%s\033]8;;\a' "$1" "$2"; }
+
 # --- welcome greeter on a fresh terminal (skip nested/subshells) ---
 # A small static banner: the hako box, a hint, and the source, all centered.
 _hako_greet() {
@@ -22,7 +26,7 @@ _hako_greet() {
   (( pad = (cols - ${#hint}) / 2 )); (( pad < 0 )) && pad=0; printf -v sp '%*s' $pad ''
   print -P "${sp}%F{8}type  %F{cyan}hako%F{8}  for keybindings & handy commands%f"
   (( pad = (cols - ${#src}) / 2 )); (( pad < 0 )) && pad=0; printf -v sp '%*s' $pad ''
-  print -P "${sp}%F{8}${src}%f"
+  print -rP "${sp}%F{8}$(_osc8 "https://$src" "$src")%f"
   print
 }
 
@@ -84,9 +88,9 @@ hako() {
 
 %F{yellow}agent & tooling%f
   %Bpi%b          launch the coding agent (opens a gmux session)
-  %Bmise ls%b     list installed tools   %Bmise use -g <tool>@<ver>%b  add/bump one
-
-%F{8}more goodies and full docs: %F{cyan}github.com/mgabor3141/hako%F{8}  (see README.md)%f'
+  %Bmise ls%b     list installed tools       %Bmise use -g <tool>@<ver>%b  add/bump one'
+  print
+  print -rP "%F{8}more goodies & docs:  %F{cyan}$(_osc8 'https://github.com/mgabor3141/hako' 'github.com/mgabor3141/hako')%f%F{8}  ·  %F{cyan}$(_osc8 'https://github.com/mgabor3141/hako/blob/main/README.md' 'README.md')%f"
 }
 
 # --- bat: syntax-highlighted, colored man pages ---

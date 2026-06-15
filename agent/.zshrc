@@ -7,16 +7,15 @@ setopt   interactivecomments # allow `# comments` on the command line
 unsetopt beep
 
 # --- welcome banner on a fresh terminal (skip nested/subshells) ---
-if [[ $SHLVL -le 1 ]] && command -v fastfetch >/dev/null; then
-  fastfetch
-fi
-# first-run hint while the dev toolchain installs (as a gmux session)
 if [[ $SHLVL -le 1 ]]; then
+  command -v fastfetch >/dev/null && fastfetch
+  # first-run hint while the dev toolchain installs (as a gmux session)
   if [[ -f ~/.local/state/hako/toolchain-failed ]]; then
     print -P "%F{red}hako:%f toolchain install failed — re-run %F{cyan}mise install%f"
   elif [[ ! -f ~/.local/state/hako/toolchain-ready ]]; then
     print -P "%F{yellow}hako:%f installing the dev toolchain (first run); watch it in the gmux dashboard. Tools appear as they finish."
   fi
+  print -P "%F{8}tip: type %F{cyan}hako%F{8} for keybindings & handy commands%f"
 fi
 
 # --- history: large, deduplicated, shared across sessions ---
@@ -44,6 +43,34 @@ alias grep='grep --color=auto'
 
 # launch the agent through gmux, so the session shows up in the dashboard
 alias pi='gmux pi'
+
+# --- hako: a quick reference for the goodies that aren't easy to discover ---
+hako() {
+  print -P '%F{cyan}%Bhako quick reference%b%f   (the non-obvious goodies)
+
+%F{yellow}search & history (fzf)%f
+  %BCtrl-R%b    fuzzy-search your command history
+  %BCtrl-T%b    fuzzy-pick a file path onto the command line
+  %BAlt-C%b     fuzzy-cd into a subdirectory
+  %B->%b / End  accept the grey autosuggestion (from history)
+
+%F{yellow}getting around%f
+  %Bz <name>%b    jump to a directory you visit often (zoxide)
+  %Bzi%b          pick the directory interactively
+  %B<dir>%b       just type a directory name to cd into it (auto_cd)
+  %Bcd -<Tab>%b   pick from the directory stack
+
+%F{yellow}listing (eza) & reading%f
+  %Bls ll la%b    long+all / long / all      %Blt%b tree   %Bl.%b dotfiles
+  %Bbat FILE%b    syntax-highlighted cat     %Bman CMD%b colorized man pages
+
+%F{yellow}agent & tooling%f
+  %Bpi%b          launch the coding agent (opens a gmux session)
+  %Bmise ls%b     list installed tools   %Bmise use -g <tool>@<ver>%b  add/bump one
+  %Bjj st%b       version control (jujutsu)
+
+%F{8}browser dashboard: http://localhost:8791   (token: gmuxd auth)%f'
+}
 
 # --- bat: syntax-highlighted, colored man pages ---
 export MANROFFOPT="-c"

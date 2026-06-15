@@ -1,8 +1,9 @@
 # hako (for the configuring agent)
 
 hako is an opinionated, sandboxed, ready-to-run home for a coding agent: **pi**
-in a container, a Debian dev box, and **gmux** for browser access, shipped as a
-`git clone && docker compose up`.
+in a container, a thin Debian OS image plus a **mise**-managed dev toolchain in
+the home, and **gmux** for browser access, shipped as a `git clone && docker
+compose up`.
 
 Canonical repo: <https://github.com/mgabor3141/hako>
 
@@ -22,14 +23,17 @@ Never commit secrets, tokens, or auth.
 
 ## Layout
 
-- `container/Dockerfile` — Debian base; user `agent` (home `/home/agent`); all
-  tooling baked **outside the home**: apt CLI tools + node (NodeSource) in
-  `/usr`, bun + pi in `/opt/bun`, gmux in `/usr/local/bin`.
-- `container/entrypoint.sh` — tini wrapper; the CMD is `gmuxd run` (foreground).
+- `container/Dockerfile` — the **thin OS tier**: Debian base, user `agent` (home
+  `/home/agent`), shells, sudo, tini, and three pinned + checksum-verified
+  binaries in `/usr/local/bin`: `mise`, `gmux`/`gmuxd`, `ffmpeg`. No dev
+  toolchain here.
+- `container/entrypoint.sh` — tini wrapper; reconciles the home toolchain in the
+  background (`mise install`), then execs the CMD `gmuxd run` (foreground).
 - `compose.yaml` — ports, mounts, env (below).
-- `agent/` — the bind-mounted home. Ships pi's opinions
-  (`.pi/agent/settings.json`, `.pi/agent/AGENTS.md`); its `.gitignore`
-  whitelists only those and ignores all runtime state and the user's projects.
+- `agent/` — the bind-mounted home. Ships the opinions: pi config
+  (`.pi/agent/`), shell/git/direnv config, and the **toolchain manifest +
+  lock** (`.config/mise/config.toml`, `.config/mise/mise.lock`). Its `.gitignore`
+  whitelists only those and ignores all installs, runtime state, and projects.
 
 ## Decisions
 
@@ -40,10 +44,11 @@ choice, add or supersede an ADR — don't bury the rationale in a commit alone.
 
 ## The rule that bites
 
-All of `agent/` is bind-mounted over `/home/agent`, so **anything installed into
-the home at build time is shadowed at runtime.** Bake tools into `/opt` or
-`/usr`, never `/home/agent`. (This is why hako is Debian, not nix/devbox — nix
-lives in the home and fights the mount.)
+All of `agent/` is bind-mounted over `/home/agent`, so **anything baked into the
+home at build time is shadowed at runtime.** OS-tier tools go in `/usr` /
+`/usr/local/bin`, never `/home/agent`. The dev toolchain is the deliberate
+exception: mise *installs* it into the home at runtime (nothing baked to shadow),
+so it persists across rebuilds and stays updatable. See ADR-0004/0005.
 
 ## Ports & mounts (in `compose.yaml`)
 
@@ -59,8 +64,11 @@ LAN/remote exposure (gmux's own remote path is its Tailscale listener).
 
 ## Updating & testing
 
-- **Config** (`agent/.pi/agent/*`): live — edit, no rebuild.
-- **Image** (Dockerfile / tools / pi / gmux): `docker compose up -d --build`.
+- **Config + tool list** (`agent/.pi/agent/*`, `agent/.config/mise/config.toml`):
+  live — edit, then `mise install` or restart to reconcile. No image rebuild.
+- **Bump a tool**: `mise upgrade` (or edit + `mise lock`), commit the `mise.lock`
+  diff.
+- **OS image** (Dockerfile / mise / gmux / ffmpeg): `docker compose up -d --build`.
 - Smoke test:
   `docker compose exec hako bash -lc 'node -v; pi --version; gmuxd status'`
 - gmux login URL + token: `docker compose exec hako gmuxd auth`

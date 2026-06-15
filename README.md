@@ -11,6 +11,7 @@ host or your keys. Customize by forking.
 ```sh
 git clone https://github.com/mgabor3141/hako && cd hako
 docker compose up -d                  # builds the image, starts gmux on :8791
+# first start installs the dev toolchain into the home in the background (~15s)
 docker compose exec hako gmuxd auth   # prints a login URL + token
 # open http://localhost:8791, authenticate, then:
 docker compose exec hako gmux pi      # launch the agent (authenticate it once)
@@ -28,8 +29,9 @@ integration enabled), and **clone into the Linux home (`~`), not `/mnt/c/...`**
   (`agent/.pi/agent/`). Bring your own provider; hako ships no credentials.
 - **gmux** — see and attach to every session from your browser (`:8791`,
   localhost-only, token-authed).
-- A Debian dev box (git, ripgrep, fd, bun, node, …) baked outside the agent's
-  home, so the whole home (`agent/`) is yours.
+- A dev toolchain (node, bun, python, ripgrep, fd, jj, …) managed by **mise**
+  and pinned by a lockfile. A thin, pinned OS image carries only the base,
+  gmux, ffmpeg, and mise; the toolchain installs into the home on first start.
 
 ## How it's wired
 
@@ -37,12 +39,15 @@ integration enabled), and **clone into the Linux home (`~`), not `/mnt/c/...`**
   scratch. Nothing on your host (including `~/.pi`) is touched.
 - The agent holds **no host credentials**: the boundary is the absence of
   secrets, not behavior restrictions.
-- Config is live; image changes need `docker compose up -d --build`.
+- Config and the tool list (`agent/.config/mise/config.toml`) are live: edit and
+  restart to reconcile. Only OS-image changes need `docker compose up -d --build`.
 
 ## Customizing
 
-Edit `agent/.pi/agent/settings.json` (live) or `container/Dockerfile` (rebuild).
-hako is meant to be forked and `git pull`ed — opinions surface as merge
+Edit `agent/.pi/agent/settings.json` (pi's config) or add tools to
+`agent/.config/mise/config.toml` then `mise install` (or restart) — both live.
+The OS image (`container/Dockerfile`) needs a rebuild. hako is meant to be forked
+and `git pull`ed — opinions, including the pinned `mise.lock`, surface as merge
 conflicts. The configuring agent's guide is
 [`AGENTS.md`](./AGENTS.md); design decisions are in [`docs/`](./docs/).
 

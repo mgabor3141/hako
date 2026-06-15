@@ -7,10 +7,11 @@ hako integrates pi + a container + gmux + (later) an MCP broker and agent-side
 MCP skills. Do these live together?
 
 ## Decision
-Three repos: **mcpeel** (agent-side MCP skills), **broker** (a fork of
-`TBXark/mcp-proxy`), and **hako** (this repo: the opinionated integration /
-distribution layer). hako **pins/references** the others; it does not vendor
-them.
+Three repos: **mcpeel** (token-efficient, hand-built CLIs over MCP, run by the
+agent), **broker** (a fork of `TBXark/mcp-proxy` — the MCP gateway mcpeel
+targets, holding the upstream creds), and **hako** (this repo: the opinionated
+integration / distribution layer). hako **pins/references** the others; it does
+not vendor them.
 
 ## Consequences
 The pieces share a protocol (MCP) and a small convention, not code (TS vs Go),

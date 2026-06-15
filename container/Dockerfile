@@ -30,6 +30,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 # bun + pi installed to /opt (outside the home), world-readable/executable.
 RUN curl -fsSL https://bun.sh/install | bash \
  && /opt/bun/bin/bun install -g @earendil-works/pi-coding-agent \
+ # drop bun's download cache (most is hardlinked into the install, so this only
+ # frees orphaned entries, but it keeps the layer tidy)
+ && rm -rf /opt/bun/install/cache \
  && chmod -R a+rX /opt/bun \
  # login shells re-run /etc/profile (resets PATH); keep /opt/bun/bin for them too
  && echo 'export PATH="$HOME/.local/bin:/opt/bun/bin:$PATH"' > /etc/profile.d/hako-path.sh

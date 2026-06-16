@@ -1,0 +1,63 @@
+#!/bin/sh
+# hako — host-side launcher for the agent stack.
+#
+# Interim shell version (ADR-0012): the eventual front door is a pinned Go
+# binary fetched by a small bootstrap. For now this just wraps the docker
+# compose overlays so you don't type the incantation by hand. Runnable from
+# anywhere — it resolves the stack relative to its own location.
+set -eu
+
+unset CDPATH
+ROOT=$(cd -- "$(dirname -- "$0")" && pwd)
+cd "$ROOT"
+
+GMUX_URL="http://localhost:8791/"
+FILES="-f compose.yaml -f gateway/compose.gateway.yaml"
+
+# `--mock` (must come first) swaps in the hermetic github mock backend, so the
+# whole stack runs with zero credentials (testing / the phase-2 tracer).
+if [ "${1:-}" = "--mock" ]; then
+  FILES="$FILES -f test/compose.mock.yaml"
+  shift
+fi
+
+# shellcheck disable=SC2086  # $FILES is intentionally word-split into -f flags
+dc() { docker compose $FILES "$@"; }
+
+usage() {
+  cat <<'EOF'
+hako — launcher for the agent stack
+
+usage: hako [--mock] <command> [args]
+
+  up [--build]    build/start the stack (detached)
+  down            stop and remove the stack
+  restart         down, then up
+  ps              container status
+  logs [service]  follow logs (default: all services)
+  shell           interactive zsh in the agent container
+  pi              launch the coding agent (a gmux session)
+  auth            print the gmux login URL + token
+  open            open the gmux web UI in your browser
+  <other>         passed straight through to `docker compose`
+
+  --mock          use the hermetic github mock backend (no credentials)
+EOF
+}
+
+cmd=${1:-}
+[ "$#" -gt 0 ] && shift || true
+
+case "$cmd" in
+  up)      dc up -d "$@"; echo "hako: up — gmux UI at $GMUX_URL  (run 'hako auth' for the token)" ;;
+  down)    dc down "$@" ;;
+  restart) dc down; dc up -d "$@" ;;
+  ps)      dc ps "$@" ;;
+  logs)    dc logs -f "$@" ;;
+  shell)   docker exec -it hako zsh ;;
+  pi)      docker exec -it hako gmux pi ;;
+  auth)    dc exec hako gmuxd auth ;;
+  open)    xdg-open "$GMUX_URL" 2>/dev/null || open "$GMUX_URL" 2>/dev/null || echo "$GMUX_URL" ;;
+  ""|-h|--help|help) usage ;;
+  *)       dc "$cmd" "$@" ;;
+esac

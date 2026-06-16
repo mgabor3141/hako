@@ -15,7 +15,7 @@ _osc8() { printf '\033]8;;%s\a%s\033]8;;\a' "$1" "$2"; }
 _hako_greet() {
   local cols=${COLUMNS:-80} pad sp l
   local -a box=('╭───────────────╮' '│    h a k o    │' '╰───────────────╯')
-  local hint='type  hako  for keybindings & handy commands'
+  local hint='type  help  for keybindings & handy commands'
   local src='github.com/mgabor3141/hako'
   print
   for l in $box; do
@@ -24,7 +24,7 @@ _hako_greet() {
   done
   print
   (( pad = (cols - ${#hint}) / 2 )); (( pad < 0 )) && pad=0; printf -v sp '%*s' $pad ''
-  print -P "${sp}%F{8}type  %F{cyan}hako%F{8}  for keybindings & handy commands%f"
+  print -P "${sp}%F{8}type  %F{cyan}help%F{8}  for keybindings & handy commands%f"
   (( pad = (cols - ${#src}) / 2 )); (( pad < 0 )) && pad=0; printf -v sp '%*s' $pad ''
   print -rP "${sp}%F{8}$(_osc8 "https://$src" "$src")%f"
   print
@@ -66,8 +66,9 @@ alias grep='grep --color=auto'
 # launch the agent through gmux, so the session shows up in the dashboard
 alias pi='gmux pi'
 
-# --- hako: a quick reference for the goodies that aren't easy to discover ---
-hako() {
+# --- help: a quick reference for the goodies that aren't easy to discover ---
+# (named `help` so the host-side `hako` launcher owns the `hako` name.)
+help() {
   print -P '%F{cyan}%Bhako goodies reference%b%f
 
 %F{yellow}search & history (fzf)%f

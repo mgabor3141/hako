@@ -35,7 +35,7 @@ integration enabled), and **clone into the Linux home (`~`), not `/mnt/c/...`**
 
 ## Handy in the shell
 
-The human shell (zsh) ships some niceties worth knowing. Run `hako` inside the
+The human shell (zsh) ships some niceties worth knowing. Run `help` inside the
 container for the full, colorized list:
 
 - `Ctrl-R` fuzzy history search, `Ctrl-T` file picker, `Alt-C` fuzzy `cd` (fzf)

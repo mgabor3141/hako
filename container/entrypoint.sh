@@ -14,6 +14,15 @@ state="$HOME/.local/state/hako"
 mkdir -p "$state"
 rm -f "$state/toolchain-ready" "$state/toolchain-failed"
 
+# Put the inlined MCP CLI adapters on PATH. Sources live in the bind-mounted
+# home (~/.agents/skills/<name>/<name>.ts); ~/.local/bin is on PATH. Re-linked
+# every start so a cold clone has them. ADR-0013.
+mkdir -p "$HOME/.local/bin"
+for cli in "$HOME"/.agents/skills/*/; do
+  name="$(basename "$cli")"
+  [ -f "$cli$name.ts" ] && ln -sf "$cli$name.ts" "$HOME/.local/bin/$name"
+done
+
 if command -v mise >/dev/null 2>&1 && command -v gmux >/dev/null 2>&1; then
   (
     # wait for gmuxd (started below by exec) to be accepting sessions

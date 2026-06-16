@@ -6,6 +6,13 @@
 # this at startup (before the cd), so without the wrappers cmd would see the
 # starting dir's env, not X's. (This replaces what direnv used to do.)
 
+# Put user-local bins on PATH (the inlined MCP CLI adapters symlink into
+# ~/.local/bin at entrypoint; ADR-0013). Guarded against duplicates.
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *) export PATH="$HOME/.local/bin:$PATH" ;;
+esac
+
 command -v mise >/dev/null 2>&1 || return 0
 
 _mise_hook() {

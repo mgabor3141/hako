@@ -1,0 +1,35 @@
+{
+  "mcpProxy": {
+    "addr": ":8096",
+    "name": "hako-gateway",
+    "version": "0.1.0",
+    "type": "streamable-http",
+    "options": {
+      "logEnabled": true
+    }
+  },
+  "mcpServers": {
+    "github": {
+      "transportType": "streamable-http",
+      "url": "${GITHUB_MCP_URL}",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_MCP_TOKEN}"
+      },
+      "options": {
+        "logEnabled": true,
+        "callHook": {
+          "command": ["/hooks/approve.sh"],
+          "requireFor": [
+            "create_pull_request",
+            "update_pull_request",
+            "merge_pull_request",
+            "add_issue_comment",
+            "issue_write",
+            "pull_request_review_write",
+            "actions_run_trigger"
+          ]
+        }
+      }
+    }
+  }
+}

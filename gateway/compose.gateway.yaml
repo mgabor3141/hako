@@ -1,0 +1,32 @@
+# Phase-2 overlay: the MCP gateway — a credential-holding proxy that fronts
+# remote MCP servers and gates chosen tool calls behind callHook (ADR-0007/0010).
+#
+#   docker compose -f compose.yaml -f gateway/compose.gateway.yaml up
+#
+# Paths are relative to the project directory (the base compose.yaml's dir =
+# repo root), not this file's dir. Built from the pinned fork for now; pin to a
+# digest per ADR-0008 before release.
+services:
+  gateway:
+    build:
+      context: https://github.com/mgabor3141/mcp-proxy.git#feat/call-hook
+      dockerfile: Dockerfile.slim
+    container_name: hako-gateway
+    restart: unless-stopped
+    volumes:
+      - ./gateway/config.json:/config/config.json:ro
+      - ./gateway/hooks:/hooks:ro
+    environment:
+      # The upstream MCP endpoint + token the gateway holds (the agent never
+      # sees these). Defaults to GitHub's hosted remote MCP.
+      GITHUB_MCP_URL: ${GITHUB_MCP_URL:-https://api.githubcopilot.com/mcp/}
+      GITHUB_MCP_TOKEN: ${GITHUB_MCP_TOKEN:-}
+
+  hako:
+    # The agent reaches the gateway by service DNS on the private compose
+    # network — no host ports. Token optional (the network is private).
+    environment:
+      MCP_GATEWAY_URL: http://gateway:8096/github/
+      MCP_GATEWAY_TOKEN: ${MCP_GATEWAY_TOKEN:-}
+    depends_on:
+      - gateway

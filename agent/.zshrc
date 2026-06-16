@@ -97,6 +97,9 @@ hako() {
 export MANROFFOPT="-c"
 export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 
+# --- user-local bins (inlined MCP CLI adapters symlink here at entrypoint) ---
+case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac
+
 # --- mise: dev toolchain manager (puts node/bun/python/pi/CLI tools on PATH) ---
 command -v mise >/dev/null && eval "$(mise activate zsh)"
 

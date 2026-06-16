@@ -9,12 +9,12 @@ export interface McpConfig {
 export function configFromEnv(tool: string): McpConfig {
   const T = tool.toUpperCase();
   const url = process.env[`${T}_MCP_URL`] ?? process.env.MCP_GATEWAY_URL;
-  const token = process.env[`${T}_MCP_TOKEN`] ?? process.env.MCP_GATEWAY_TOKEN;
-  if (!url || !token) {
+  const token = process.env[`${T}_MCP_TOKEN`] ?? process.env.MCP_GATEWAY_TOKEN ?? "";
+  if (!url) {
     console.error(
       `Not configured. The human operator must set environment variables:\n` +
         `  ${T}_MCP_URL   (or MCP_GATEWAY_URL)   — MCP endpoint, e.g. an MCP gateway\n` +
-        `  ${T}_MCP_TOKEN (or MCP_GATEWAY_TOKEN) — bearer token for that endpoint\n` +
+        `  ${T}_MCP_TOKEN (or MCP_GATEWAY_TOKEN) — bearer token, only if the endpoint requires one\n` +
         `Agent: report this to the user; do not try to work around it.`,
     );
     process.exit(3);
@@ -43,9 +43,11 @@ export class McpClient {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       Accept: "application/json, text/event-stream",
-      Authorization: `Bearer ${this.cfg.token}`,
       ...this.extraHeaders,
     };
+    // The gateway needs no inbound token on the private network; send one only
+    // if configured (e.g. a real remote endpoint that requires it).
+    if (this.cfg.token) headers["Authorization"] = `Bearer ${this.cfg.token}`;
     if (this.#sessionId) headers["Mcp-Session-Id"] = this.#sessionId;
 
     const res = await fetch(this.cfg.url, {

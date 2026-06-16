@@ -33,15 +33,45 @@ fi
 # shellcheck disable=SC2086  # $FILES is intentionally word-split into -f flags
 dc() { docker compose $FILES "$@"; }
 
+# Read a line with the terminal echo off (masked input). Falls back gracefully
+# when stdin isn't a tty (e.g. piped in tests).
+read_secret() {
+  _old=$(stty -g 2>/dev/null) || true
+  stty -echo 2>/dev/null || true
+  IFS= read -r "$1"
+  stty "${_old:-sane}" 2>/dev/null || true
+  printf '\n'
+}
+
+# Encrypt a secret into the vault (age, via the gateway image which ships it).
+# Usage: hako seal [name]   (default: github)
+seal() {
+  name="${1:-github}"
+  case "$name" in *[!a-zA-Z0-9_-]*) echo "hako: bad secret name '$name'" >&2; return 1;; esac
+  img="hako-gateway"
+  docker image inspect "$img" >/dev/null 2>&1 || { echo "hako: building the gateway image (first run)..."; dc build gateway; }
+  secret=''; p1=''; p2=''
+  printf 'secret value for "%s" (hidden): ' "$name"; read_secret secret
+  [ -n "$secret" ] || { echo "hako: empty secret, aborting" >&2; return 1; }
+  printf 'vault passphrase (hidden): '; read_secret p1
+  printf 'confirm passphrase (hidden): '; read_secret p2
+  [ "$p1" = "$p2" ] || { echo "hako: passphrases do not match" >&2; return 1; }
+  mkdir -p vault
+  if printf '%s' "$secret" | docker run --rm -i -e PASS="$p1" -v "$ROOT/vault:/out" --entrypoint sh "$img" -c '
+        umask 077; cat > /tmp/s
+        printf "%s\n%s\n" "$PASS" "$PASS" | script -qec "age -p -o /out/'"$name"'.age /tmp/s" /dev/null >/dev/null 2>&1
+        rm -f /tmp/s; [ -s "/out/'"$name"'.age" ]'; then
+    echo "hako: sealed vault/$name.age -- start with 'hako up' (or 'hako unlock')"
+  else
+    echo "hako: seal FAILED" >&2; return 1
+  fi
+}
+
 # Prompt (masked) for the vault passphrase and pipe it to the gateway's unlock.
 unlock() {
   for _ in $(seq 1 30); do docker exec hako-gateway true 2>/dev/null && break; sleep 0.5; done
-  printf 'hako: vault passphrase: '
-  old=$(stty -g 2>/dev/null) || true
-  stty -echo 2>/dev/null || true
-  IFS= read -r pass
-  stty "${old:-sane}" 2>/dev/null || true
-  printf '\n'
+  pass=''
+  printf 'hako: vault passphrase: '; read_secret pass
   printf '%s' "$pass" | docker exec -i hako-gateway /seal/hako-unlock
 }
 
@@ -54,6 +84,7 @@ usage: hako [--mock] <command> [args]
   up [--build]    build/start the stack (detached); unseals the vault if present
   down            stop and remove the stack
   restart         down, then up
+  seal [name]     encrypt a secret into the vault (default name: github)
   unlock          re-enter the vault passphrase (after a gateway restart)
   ps              container status
   logs [service]  follow logs (default: all services)
@@ -74,6 +105,7 @@ case "$cmd" in
   up)      dc up -d "$@"; [ "$VAULT" = 1 ] && unlock; echo "hako: up — gmux UI at $GMUX_URL  (run 'hako auth' for the token)" ;;
   down)    dc down "$@" ;;
   restart) dc down; dc up -d "$@"; [ "$VAULT" = 1 ] && unlock ;;
+  seal)    seal "$@" ;;
   unlock)  [ "$VAULT" = 1 ] || { echo "hako: no vault (vault/*.age) found" >&2; exit 1; }; unlock ;;
   ps)      dc ps "$@" ;;
   logs)    dc logs -f "$@" ;;

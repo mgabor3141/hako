@@ -63,8 +63,27 @@ alias lt='eza -aT --icons --level=2 --group-directories-first'  # tree, 2 levels
 alias l.="eza -a | grep -e '^\.'"                                # dotfiles only
 alias grep='grep --color=auto'
 
-# launch the agent through gmux, so the session shows up in the dashboard
-alias pi='gmux pi'
+# Launch the agent through gmux (so the session shows in the dashboard) -- but
+# route `pi update` core upgrades through mise, because pi's core is a pinned
+# mise tool and can't self-update (ADR-0004/0008). Extensions still update via
+# pi itself. Other `pi ...` invocations pass straight through to `gmux pi`.
+pi() {
+  local tool="npm:@earendil-works/pi-coding-agent"
+  if [[ "$1" == "update" ]]; then
+    case "${2:-}" in
+      ""|self|pi|--self)
+        command -v mise >/dev/null || { command pi "$@"; return; }
+        print -P "%F{8}hako: pi core is mise-pinned -- upgrading via mise (rewrites mise.lock)...%f"
+        mise upgrade "$tool" || return
+        [[ $# -eq 1 ]] && mise exec -- pi update --extensions
+        print -P "%F{8}hako: commit the mise.lock change in the hako repo to keep this update.%f"
+        ;;
+      *) command pi "$@" ;;   # extensions / a specific package: pi handles natively
+    esac
+    return
+  fi
+  gmux pi "$@"
+}
 
 # --- help: a quick reference for the goodies that aren't easy to discover ---
 # (named `help` so the host-side `hako` launcher owns the `hako` name.)

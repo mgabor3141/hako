@@ -372,7 +372,7 @@ checksum = "sha256:6c8d54f635feff4df76c2ca80f45332eb2ff57d25226edce36592e51a177e
 url = "https://nodejs.org/dist/v22.22.3/node-v22.22.3-win-x64.zip"
 
 [[tools."npm:@earendil-works/pi-coding-agent"]]
-version = "0.79.3"
+version = "0.79.4"
 backend = "npm:@earendil-works/pi-coding-agent"
 
 [[tools.python]]

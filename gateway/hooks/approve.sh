@@ -1,34 +1,49 @@
 #!/bin/sh
-# callHook approval gate (runs inside the gateway container).
+# Approval gate -- runs inside the gateway container (ADR-0010).
 #
-# Input:  the tool-call request JSON on stdin; MCP_SERVER / MCP_TOOL in env.
-# Output: exit 0 approves the call; any non-zero exit denies it (fail-closed).
-#         Whatever we print to stderr/stdout becomes the model-visible refusal.
+# OS-agnostic by design: it does NOT know how the human is asked. It drops the
+# request into the shared /tmp/approvals volume and blocks until a verdict file
+# appears (or callHook times out -> fail-closed deny). A hako-side watcher turns
+# each request into an interactive gmux y/N session (browser, persistent).
 #
-# This is the simple, swappable default (ADR-0010). It shows the three policy
-# branches — allow / deny / ask — driven by a per-tool table. The real
-# interactive prompt (notify-send click-to-approve) swaps in for the "ask"
-# branch later; for now "ask" honors HAKO_APPROVE_ALL so the loop is testable.
+# Input:  request params JSON on stdin (`{"name":...,"arguments":{...}}`);
+#         MCP_SERVER / MCP_TOOL in env.
+# Output: exit 0 approves; any non-zero denies (fail-closed).
 set -eu
 
-req="$(cat)"
-log() { echo "[approve] server=${MCP_SERVER:-?} tool=${MCP_TOOL:-?} $*" >&2; }
+params="$(cat)"
+server="${MCP_SERVER:-?}"; tool="${MCP_TOOL:-?}"
+dir="${HAKO_APPROVALS_DIR:-/tmp/approvals}"
+log() { echo "[approve] server=$server tool=$tool $*" >&2; }
 
-case "${MCP_TOOL:-}" in
-  merge_pull_request)
-    # deny: never allowed by policy
-    log "DENY (policy: merges are disabled)"
-    echo "merging is disabled by hako policy" >&2
-    exit 1
-    ;;
-  *)
-    # ask: needs operator approval. notify-send goes here; until then a toggle.
-    if [ "${HAKO_APPROVE_ALL:-0}" = "1" ]; then
-      log "APPROVE"
-      exit 0
-    fi
-    log "DENY (awaiting approval; set HAKO_APPROVE_ALL=1 to approve)"
-    echo "awaiting operator approval — none granted" >&2
-    exit 1
-    ;;
+# never-allow policy, regardless of the human
+if [ "$tool" = "merge_pull_request" ]; then
+  log "DENY (policy: merges are disabled)"
+  echo "merging is disabled by hako policy" >&2
+  exit 1
+fi
+
+# headless / CI escape hatch: approve without a prompt (no human present)
+if [ "${HAKO_APPROVE_ALL:-0}" = "1" ]; then
+  log "APPROVE (HAKO_APPROVE_ALL)"
+  exit 0
+fi
+
+# shared dir must be writable by the (unprivileged) hako-side watcher too
+mkdir -p "$dir" && chmod 0777 "$dir" 2>/dev/null || true
+
+id="${tool}-$(date +%s)-$$"
+# {"server":..,"params":{"name":..,"arguments":..}} written atomically so the
+# watcher never reads a partial file.
+printf '{"server":"%s","params":%s}\n' "$server" "$params" > "$dir/$id.json.part"
+mv "$dir/$id.json.part" "$dir/$id.json"
+
+# block until the watcher's session writes a verdict; callHook kills us at its
+# configured timeout, which surfaces as a deny.
+while [ ! -f "$dir/$id.verdict" ]; do sleep 1; done
+verdict="$(cat "$dir/$id.verdict")"
+
+case "$verdict" in
+  approve) log "APPROVE (operator)"; exit 0 ;;
+  *)       log "DENY (operator)"; echo "denied by operator" >&2; exit 1 ;;
 esac

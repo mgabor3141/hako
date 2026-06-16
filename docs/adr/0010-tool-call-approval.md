@@ -1,8 +1,9 @@
 # ADR-0010: Tool-call approval is a swappable hook
 
 - **Status:** Accepted — 2026-06-16 (amended 2026-06-16: the default channel is
-  no longer notify-send — see Decision). `callHook` is wired and interactively
-  verified in the tracer — approve / deny / policy-deny, via a real human click.
+  the shipped default is a gmux approval session — see Decision). `callHook` is
+  wired and interactively verified in the tracer (approve / deny / policy-deny,
+  via a real human answering in the browser).
 
 ## Context
 A sandboxed agent reaching real systems through the gateway (ADR-0007) needs a
@@ -23,12 +24,16 @@ host-side responder (the launcher's job, ADR-0012) and in a local, gitignored
 override (`compose.override.yaml` + `gateway/hooks.local/`) — never in the
 shipped image, compose, or hook.
 
-**Intended default: a persistent approval surface, not a fire-and-forget toast.**
-Dismiss an OS notification by accident and the request can only time out. The
-target is a **persistent UI — a gmux TUI reading persisted approval state** the
-human can reopen and act on at leisure (gmux needs a notify primitive for this).
-Until it exists, the shipped "ask" branch is a safe placeholder: deny unless an
-explicit allow toggle is set.
+**Shipped default: an interactive gmux session.** A fire-and-forget OS toast is
+inadequate — dismiss one by accident and the request can only time out. Instead
+the hook drops the request into a shared `/tmp/approvals` volume and blocks on a
+verdict file; a **hako-side watcher** (gmux's socket is local to the agent
+container, not the gateway) turns each request into a `y/N` gmux session that
+**persists in the dashboard until answered**, OS-agnostic and browser-first.
+Exited prompts linger with their verdict as an approval log. (Rough edges: you
+find the session by hand and there's no one-click dismiss — a dedicated
+persistent approvals TUI + a gmux notify primitive are the follow-up.)
+`HAKO_APPROVE_ALL` is a documented headless/CI escape hatch.
 
 ## Consequences
 The hook is one swappable command, so any channel drops in: a local
@@ -41,5 +46,5 @@ TUI. We ship examples, not a baked-in channel.
 Because notify-send is no longer the default, the **gateway image ships no
 libnotify** and stays minimal; desktop toasts are a documented, local-only
 option, so the Linux-only D-Bus-mount boundary is a property of *that option*,
-not of hako. A future ADR may split out the persistent-surface design once gmux
-grows the primitive.
+not of hako. The next refinement is a dedicated persistent approvals TUI (and a
+gmux notify primitive) rather than one gmux session per request.

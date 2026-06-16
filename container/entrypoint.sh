@@ -41,4 +41,16 @@ if command -v mise >/dev/null 2>&1 && command -v gmux >/dev/null 2>&1; then
   ) &
 fi
 
+# Approval watcher (ADR-0010): when the gateway overlay mounts the approval
+# scripts and points HAKO_APPROVAL_WATCH at the watcher, run it here -- it lives
+# in this container because gmux's socket is local to it. It turns gated-call
+# requests (dropped by the gateway hook in the shared /tmp/approvals volume)
+# into interactive gmux y/N sessions. Absent the gateway, this is a no-op.
+if [ -n "${HAKO_APPROVAL_WATCH:-}" ] && [ -x "${HAKO_APPROVAL_WATCH}" ] && command -v gmux >/dev/null 2>&1; then
+  (
+    for _ in $(seq 1 150); do gmuxd status >/dev/null 2>&1 && break; sleep 0.2; done
+    exec "$HAKO_APPROVAL_WATCH"
+  ) &
+fi
+
 exec "$@"

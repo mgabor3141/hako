@@ -6,6 +6,11 @@
 # Paths are relative to the project directory (the base compose.yaml's dir =
 # repo root), not this file's dir. Built from the pinned fork for now; pin to a
 # digest per ADR-0008 before release.
+volumes:
+  # shared between the gateway (writes requests) and hako (the watcher + the
+  # gmux prompt sessions write verdicts). ADR-0010.
+  approvals:
+
 services:
   gateway:
     build:
@@ -16,6 +21,7 @@ services:
     volumes:
       - ./gateway/config.json:/config/config.json:ro
       - ./gateway/hooks:/hooks:ro
+      - approvals:/tmp/approvals
     environment:
       # The upstream MCP endpoint + token the gateway holds (the agent never
       # sees these). Defaults to GitHub's hosted remote MCP.
@@ -28,5 +34,10 @@ services:
     environment:
       MCP_GATEWAY_URL: http://gateway:8096/github/
       MCP_GATEWAY_TOKEN: ${MCP_GATEWAY_TOKEN:-}
+      # the entrypoint starts this hako-side approval watcher when present
+      HAKO_APPROVAL_WATCH: /opt/hako/approvals/watch.sh
+    volumes:
+      - approvals:/tmp/approvals
+      - ./gateway/approvals:/opt/hako/approvals:ro
     depends_on:
       - gateway

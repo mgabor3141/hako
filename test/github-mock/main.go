@@ -1,11 +1,11 @@
 // github-mock is a tiny, fixture-backed MCP server that mimics the slice of the
 // GitHub MCP which the `github` CLI (agent/.agents/skills/github) calls. It lets
-// the broker + callHook loop be exercised end-to-end with the real CLI and zero
+// the gateway + callHook loop be exercised end-to-end with the real CLI and zero
 // credentials. It is NOT faithful GitHub behavior — just enough response shape
 // for the CLI's parsers. Extend the fixtures/tools as testing needs grow.
 //
-// Speaks streamable HTTP via mcp-go (the same library the broker uses, so the
-// broker can proxy it). Listens on :8080 at endpoint /mcp by default; override
+// Speaks streamable HTTP via mcp-go (the same library the gateway uses, so the
+// gateway can proxy it). Listens on :8080 at endpoint /mcp by default; override
 // with ADDR. Run standalone: `go run .`
 package main
 

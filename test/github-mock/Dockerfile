@@ -1,5 +1,5 @@
 # Build the fixture MCP server into a tiny static image (no shell needed — the
-# mock runs no external commands; the callHook lives in the broker, not here).
+# mock runs no external commands; the callHook lives in the gateway, not here).
 FROM golang:1.25.5 AS build
 WORKDIR /app
 COPY go.mod go.sum ./

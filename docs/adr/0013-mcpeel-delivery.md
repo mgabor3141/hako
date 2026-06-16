@@ -27,7 +27,7 @@ run a CLI standalone). hako is the **reference implementation**: anyone or any
 agent can still pull or `skills.sh`-install the adapters from here.
 
 The `github` adapter **replaces** the `pi-github` package (dropped from
-`settings.json`). Auth is wired by env (`MCP_GATEWAY_URL` → the broker; token
+`settings.json`). Auth is wired by env (`MCP_GATEWAY_URL` → the gateway; token
 optional per ADR-0007).
 
 ## Consequences

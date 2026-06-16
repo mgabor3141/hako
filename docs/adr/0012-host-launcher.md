@@ -9,17 +9,17 @@ the host has to orchestrate the human-facing flow.
 
 ## Decision
 Ship a host-side **`hako` Go binary** as the front door. `hako up`:
-- runs `docker compose up` (agent + broker sidecar),
+- runs `docker compose up` (agent + gateway sidecar),
 - opens the gmux dashboard in **Chromium `--app` mode** if available, else the
   default browser (lifting gmux's `cli/gmux/cmd/gmux/browser.go`),
-- **unseals the vault** (masked passphrase prompt, piped to the broker over
+- **unseals the vault** (masked passphrase prompt, piped to the gateway over
   stdin — ADR-0011),
 - and provides an **interactive wizard** to set up MCP servers and their auth
   (storing secrets in the `age` vault, never on a command line).
 
 `docker compose up` stays available for power users; `hako up` is the documented
 entry point. Go is chosen to reuse gmux's browser code and ship one static
-cross-platform artifact, matching the gmux/broker pinned-binary ethos.
+cross-platform artifact, matching the gmux/gateway pinned-binary ethos.
 
 **Delivery (model C):** commit a tiny, readable `./hako` **bootstrap script**;
 on first run it detects OS/arch, downloads the **pinned, checksummed** `hako`
@@ -37,4 +37,4 @@ no committed binary (dodging repo bloat, multi-platform commits, and the
 tagged release, with SLSA attestations available later). Masked passphrase input
 reveals length to a shoulder-surfer — accepted for first-timer clarity. The
 launcher is now a fourth pinned artifact to maintain alongside mise/gmux/ffmpeg/
-broker.
+gateway.

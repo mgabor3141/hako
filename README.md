@@ -73,5 +73,5 @@ that file to your agent.
 ## Roadmap
 
 - **Phase 1 — pi + container + gmux** *(current)*: clone-and-up opinionated pi.
-- **Phase 2 — governed tools**: a pinned MCP broker + skills, so agents reach
-  tools through a broker that holds the credentials and the agent holds none.
+- **Phase 2 — governed tools**: a pinned MCP gateway + skills, so agents reach
+  tools through a gateway that holds the credentials and the agent holds none.

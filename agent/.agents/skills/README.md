@@ -1,6 +1,6 @@
 # hako MCP CLI adapters
 
-Small, agent-optimized CLIs that talk to an MCP endpoint (the hako broker, or
+Small, agent-optimized CLIs that talk to an MCP endpoint (the hako gateway, or
 any MCP gateway). Each lives in its own skill folder (`<name>/SKILL.md` + a
 TypeScript CLI). They're curated for agent ergonomics: minimal token cost, one
 call per question, errors that teach the next action. Formerly the standalone
@@ -21,7 +21,7 @@ call per question, errors that teach the next action. Formerly the standalone
 ## Auth boundary
 
 The CLI never holds upstream credentials — it talks to a gateway that does (the
-hako broker). Never hardcode tokens in a `SKILL.md` or any committed file.
+hako gateway). Never hardcode tokens in a `SKILL.md` or any committed file.
 
 ## Editing and contributing
 

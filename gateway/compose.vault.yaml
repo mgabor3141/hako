@@ -1,0 +1,20 @@
+# Vault overlay (ADR-0011): the gateway boots SEALED. It gets no token from the
+# environment; it must be unlocked with the passphrase, which age-decrypts
+# vault/github.age into a tmpfs the gateway reads. `hako up` detects the vault
+# and does this for you; `hako unlock` re-does it after a gateway restart.
+#
+#   docker compose -f compose.yaml -f gateway/compose.gateway.yaml \
+#     -f gateway/compose.vault.yaml up -d        # then: hako unlock
+services:
+  gateway:
+    entrypoint: ["/seal/boot.sh"]
+    command: ["--config", "/config/config.json"]
+    environment:
+      # sealed: blank the token the gateway overlay would otherwise inject
+      GITHUB_MCP_TOKEN: ""
+    volumes:
+      - ./gateway/seal:/seal:ro
+      - ./vault:/vault:ro
+    tmpfs:
+      # decrypted token lives here only -- RAM, never the host disk
+      - /run/hako

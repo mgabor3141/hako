@@ -1,8 +1,8 @@
 # ADR-0011: Secrets — passphrase-vault by default
 
-- **Status:** Accepted — 2026-06-16. Not yet built — the tracer currently uses
-  tier 3 (a `0600` gitignored `.env`) for the upstream token; the `age` vault +
-  `hako-unlock` follow.
+- **Status:** Accepted — 2026-06-16. Vault tracer **built**: `age` blob -> sealed
+  gateway -> `hako unlock` (passphrase over stdin) -> token in tmpfs, validated
+  against real GitHub. `.env` (tier 3) remains the no-vault fallback.
 
 ## Context
 The gateway holds the real upstream credentials (ADR-0002/0007). Since it's a
@@ -20,7 +20,8 @@ at **`/run/secrets/<name>`** (so it never appears in `docker inspect`):
    blocks until unsealed. `hako up` prompts for the passphrase (masked input)
    and pipes it to `docker exec -i gateway hako-unlock` over **stdin** — never in
    args/env/history. The gateway decrypts into **memory** and only then launches
-   mcp-proxy. Restart re-seals. The plaintext is never on the host disk, the
+   mcp-proxy. Restart re-seals. (age refuses a non-tty passphrase, so `hako-unlock`
+   pty-wraps it via `script`.) The plaintext is never on the host disk, the
    encrypted blob is useless without the passphrase, and the passphrase is never
    stored. The gateway *is* the in-memory secret agent (ssh-agent/gpg-agent
    pattern): everything goes through it, nothing else sees the credential.

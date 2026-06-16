@@ -1,9 +1,11 @@
 # ADR-0012: Host-side `hako` launcher
 
 - **Status:** Accepted — 2026-06-16. An interim POSIX shell `./hako`
-  (`up`/`down`/`restart`/`ps`/`logs`/`shell`/`pi`/`auth`/`open` + passthrough,
-  `--mock`) is built and the `hako`->`help` rename is done; the Go binary +
-  bootstrap (below) remain the target.
+  (`up`/`down`/`restart`/`unlock`/`ps`/`logs`/`shell`/`pi`/`auth`/`open` +
+  passthrough, `--mock`) is built; `up` auto-detects the vault and unseals it
+  (masked passphrase piped to the gateway), `unlock` re-does it after a gateway
+  restart, and the `hako`->`help` rename is done. The Go binary + bootstrap
+  (below) remain the target.
 
 ## Context
 The default secret model needs an interactive unseal, MCP servers need guided

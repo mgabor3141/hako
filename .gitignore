@@ -3,3 +3,5 @@ workspace/
 # local, host-specific test wiring (e.g. notify-send desktop approval)
 compose.override.yaml
 gateway/hooks.local/
+# the age-encrypted secret vault is user data, never committed
+vault/

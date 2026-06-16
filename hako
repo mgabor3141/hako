@@ -21,8 +21,29 @@ if [ "${1:-}" = "--mock" ]; then
   shift
 fi
 
+# An age-encrypted vault (ADR-0011) means the gateway boots sealed and needs a
+# passphrase to unseal. Detected automatically: if present, add the overlay and
+# have `up` unseal after starting.
+VAULT=0
+if ls vault/*.age >/dev/null 2>&1; then
+  FILES="$FILES -f gateway/compose.vault.yaml"
+  VAULT=1
+fi
+
 # shellcheck disable=SC2086  # $FILES is intentionally word-split into -f flags
 dc() { docker compose $FILES "$@"; }
+
+# Prompt (masked) for the vault passphrase and pipe it to the gateway's unlock.
+unlock() {
+  for _ in $(seq 1 30); do docker exec hako-gateway true 2>/dev/null && break; sleep 0.5; done
+  printf 'hako: vault passphrase: '
+  old=$(stty -g 2>/dev/null) || true
+  stty -echo 2>/dev/null || true
+  IFS= read -r pass
+  stty "${old:-sane}" 2>/dev/null || true
+  printf '\n'
+  printf '%s' "$pass" | docker exec -i hako-gateway /seal/hako-unlock
+}
 
 usage() {
   cat <<'EOF'
@@ -30,9 +51,10 @@ hako — launcher for the agent stack
 
 usage: hako [--mock] <command> [args]
 
-  up [--build]    build/start the stack (detached)
+  up [--build]    build/start the stack (detached); unseals the vault if present
   down            stop and remove the stack
   restart         down, then up
+  unlock          re-enter the vault passphrase (after a gateway restart)
   ps              container status
   logs [service]  follow logs (default: all services)
   shell           interactive zsh in the agent container
@@ -49,9 +71,10 @@ cmd=${1:-}
 [ "$#" -gt 0 ] && shift || true
 
 case "$cmd" in
-  up)      dc up -d "$@"; echo "hako: up — gmux UI at $GMUX_URL  (run 'hako auth' for the token)" ;;
+  up)      dc up -d "$@"; [ "$VAULT" = 1 ] && unlock; echo "hako: up — gmux UI at $GMUX_URL  (run 'hako auth' for the token)" ;;
   down)    dc down "$@" ;;
-  restart) dc down; dc up -d "$@" ;;
+  restart) dc down; dc up -d "$@"; [ "$VAULT" = 1 ] && unlock ;;
+  unlock)  [ "$VAULT" = 1 ] || { echo "hako: no vault (vault/*.age) found" >&2; exit 1; }; unlock ;;
   ps)      dc ps "$@" ;;
   logs)    dc logs -f "$@" ;;
   shell)   docker exec -it hako zsh ;;

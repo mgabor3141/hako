@@ -1,6 +1,8 @@
 # ADR-0011: Secrets — passphrase-vault by default
 
-- **Status:** Accepted — 2026-06-16. Not yet built.
+- **Status:** Accepted — 2026-06-16. Not yet built — the tracer currently uses
+  tier 3 (a `0600` gitignored `.env`) for the upstream token; the `age` vault +
+  `hako-unlock` follow.
 
 ## Context
 The gateway holds the real upstream credentials (ADR-0002/0007). Since it's a

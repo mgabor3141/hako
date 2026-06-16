@@ -16,6 +16,9 @@ Pin and verify everything, per tier:
   and verified by `sha256`. No `curl|bash` installers.
 - **Toolchain tier**: `mise.lock` pins exact versions and checksums for every
   tool across platforms; installs run `--locked`.
+- **Release-age delay**: mise's `minimum_release_age` (default 24h) stays on, so
+  a freshly-published version isn't adopted until it has aged enough for a
+  compromise to be caught or yanked (it skipped a <24h-old release in practice).
 
 Bumps are deliberate, reviewable commits (a hash or lock diff).
 

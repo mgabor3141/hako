@@ -2,7 +2,9 @@
 
 - **Status:** Accepted — 2026-06-16 (supersedes the 2026-06-15 "host-local"
   revision, which itself resolved the 2026-06-14 host-or-sidecar draft — see the
-  history note below). `callHook` is built; not yet wired into hako.
+  history note below). Wired and validated end-to-end in the 2a tracer: the
+  gateway sidecar fronts a github-shaped mock over the private network, with
+  `callHook` gating writes.
 
 ## Context
 Phase 2 goal: the agent reaches real tools without holding upstream credentials

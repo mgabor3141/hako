@@ -1,7 +1,9 @@
 # ADR-0013: The MCP CLI adapters are inlined into hako
 
 - **Status:** Accepted — 2026-06-16 (supersedes the same-date "deliver via
-  skills.sh, pinned to a SHA" decision). Not yet wired.
+  skills.sh, pinned to a SHA" decision). Wired: the `github` adapter is inlined,
+  symlinked onto `PATH`, contract-tested, and exercised through the gateway in
+  the tracer.
 
 ## Context
 The agent-side MCP CLI adapters (the `github` CLI etc., formerly the standalone

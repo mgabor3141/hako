@@ -50,11 +50,22 @@ export class McpClient {
     if (this.cfg.token) headers["Authorization"] = `Bearer ${this.cfg.token}`;
     if (this.#sessionId) headers["Mcp-Session-Id"] = this.#sessionId;
 
-    const res = await fetch(this.cfg.url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-    });
+    let res: Response;
+    try {
+      res = await fetch(this.cfg.url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      });
+    } catch {
+      // Nothing listening (most often the gateway is sealed, or down). Give an
+      // actionable, hako-aware message instead of a raw "Unable to connect".
+      throw new Error(
+        `could not reach the MCP gateway at ${this.cfg.url} - it may be down or ` +
+          `sealed. If it was just (re)started, unseal it on the host with ` +
+          `'hako unlock' (or 'hako up'). Agent: report this to the user.`,
+      );
+    }
 
     const sid = res.headers.get("mcp-session-id");
     if (sid) this.#sessionId = sid;
@@ -90,7 +101,7 @@ export class McpClient {
       params: {
         protocolVersion: "2025-03-26",
         capabilities: {},
-        clientInfo: { name: "mcpeel", version: "0.1" },
+        clientInfo: { name: "hako", version: "0.1" },
       },
     });
     if (res?.error) throw new Error(`MCP initialize failed: ${res.error.message}`);

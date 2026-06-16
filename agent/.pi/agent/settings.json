@@ -1,5 +1,5 @@
 {
-  "packages": ["npm:pi-librarian", "npm:pi-github"],
+  "packages": ["npm:pi-librarian"],
   "defaultProjectTrust": "always",
   "treeFilterMode": "no-tools",
   "terminal": { "clearOnShrink": true },

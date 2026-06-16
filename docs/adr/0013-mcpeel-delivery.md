@@ -1,38 +1,41 @@
-# ADR-0013: mcpeel delivered via skills.sh, pinned
+# ADR-0013: The MCP CLI adapters are inlined into hako
 
-- **Status:** Accepted — 2026-06-16. Not yet wired.
+- **Status:** Accepted — 2026-06-16 (supersedes the same-date "deliver via
+  skills.sh, pinned to a SHA" decision). Not yet wired.
 
 ## Context
-mcpeel is the agent-side CLI layer (ADR-0001) — the `github` CLI and friends
-that talk to the broker/gateway. It is distributed as a **skills repo**: plain
-TypeScript, no npm package, no build step, `git pull` to update (mcpeel's own
-ADR-0005/0002). pi auto-discovers skills from `~/.pi/agent/skills/` and the
-cross-tool `~/.agents/skills/` convention. We need it in the agent **as a
-reference, not vendored** (ADR-0001) and **pinned** (ADR-0008).
+The agent-side MCP CLI adapters (the `github` CLI etc., formerly the standalone
+"mcpeel") are a skills repo: plain TypeScript, no npm package, no build step.
+pi auto-discovers skills from `~/.pi/agent/skills/` and the cross-tool
+`~/.agents/skills/` convention. We first planned to fetch them via `skills.sh`
+(`npx skills add`) pinned to a commit SHA — but the adapters are co-designed and
+co-tested with hako, the cross-repo SHA pin sat below our checksum bar
+(ADR-0008), and hako *is* the integration layer whose fork-and-pull model
+(ADR-0005) already fits "edit the source, keep a fork."
 
 ## Decision
-Deliver mcpeel with **`skills.sh`** (`vercel-labs/skills`, `npx skills add`) —
-the ecosystem-standard skills installer, which has explicit **pi** support and
-installs into `~/.agents/skills` (canonical copy + per-agent symlinks). Pin to
-an **immutable commit SHA** in the source URL (and pin the tool itself,
-`npx skills@<ver>`). Run it **inside the container** at entrypoint/setup — bun
-and node are present, and `~/.agents/skills` is in the bind-mounted home, so it
-persists across rebuilds like the mise toolchain.
+**Inline the adapters into hako**, in-tree under `agent/.agents/skills/<name>/`
+(where pi reads them via the bind-mounted home), with a **root-level `skills`
+symlink → `agent/.agents/skills`** so they're also exposed at the conventional
+discovery path. hako **owns the PATH/symlink setup** for the CLIs (e.g.
+`github` → `~/.local/bin`), done in the launcher/entrypoint.
 
-mcpeel's `github` **replaces** the `pi-github` package (dropped from
-`settings.json`). Because `skills.sh` installs the skill but not the bundled
-CLI as a bare command, the `hako` setup/entrypoint adds the mcpeel-specific
-step: `ln -s …/github.ts ~/.local/bin/github`. Auth is wired by env
-(`MCP_GATEWAY_URL` → the broker; token optional per ADR-0007).
+The standalone **`mcpeel` meta-skill is dropped** — its only job was teaching
+self-install/management, which hako now handles. A **README in the skills dir**
+carries the relevant runtime/auth notes (TS runtime, `MCP_GATEWAY_URL`, how to
+run a CLI standalone). hako is the **reference implementation**: anyone or any
+agent can still pull or `skills.sh`-install the adapters from here.
+
+The `github` adapter **replaces** the `pi-github` package (dropped from
+`settings.json`). Auth is wired by env (`MCP_GATEWAY_URL` → the broker; token
+optional per ADR-0007).
 
 ## Consequences
-Standard, pi-aware delivery with `update`/`list`/`remove` for free; consistent
-with "reference not vendor" and the runtime-install model. Two caveats:
-- **Pin rigor is a git SHA, not a checksum** — content-addressed and immutable
-  (reproducible), but a notch below `mise.lock`'s sha256 bar (ADR-0008).
-- **skills.sh installs the skill, not the CLI-on-PATH** — hence the extra
-  symlink step, which is mcpeel-specific and owned by hako's setup.
-
-Rejected: **mise** (no npm package / skills backend; would force a build that
-fights mcpeel's design) and a **git submodule** (exact SHA pin, but awkward
-placement vs pi's skill-dir layout plus submodule UX).
+In-tree means **reproducible by construction** — no cross-repo pin, no fetch,
+no "is the pinned SHA the tested SHA?" gap. The adapters ride hako's CI (which
+gains a TS bun+node job) and propagate as fork-and-pull merge conflicts.
+`skills.sh` is demoted from hako's delivery mechanism to the external-consumption
+convenience. Costs: hako's repo gains TS and the adapters' tests; the standalone
+"mcpeel" name goes away (one fewer coined name to learn). Follow-ups: whitelist
+the skill files in `agent/.gitignore`, decide the fate of the old mcpeel repo
+(archive/redirect).

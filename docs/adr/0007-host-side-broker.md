@@ -7,13 +7,13 @@
 ## Context
 Phase 2 goal: the agent reaches real tools without holding upstream credentials
 (ADR-0002). The broker is a fork of `TBXark/mcp-proxy` — the **gateway** that
-mcpeel's CLIs target (ADR-0001): it holds the upstream creds and exposes MCP
-servers to the agent. The open question: *where does it run* relative to the
+hako's MCP CLI adapters target (ADR-0001): it holds the upstream creds and
+exposes MCP servers to the agent. The open question: *where does it run* relative to the
 containerized agent, and *what does it run*?
 
 The deciding fact: mcp-proxy aggregates two kinds of servers — **stdio**
 (spawns a subprocess like `npx …`/`uvx …`, needing host runtimes) and **remote**
-(`url`, just proxies an HTTP endpoint with a token). mcpeel's CLIs target
+(`url`, just proxies an HTTP endpoint with a token). hako's adapters target
 **remote** MCP servers (e.g. the GitHub remote MCP). Remote-proxying needs only
 outbound HTTPS — no node/python — so it containerizes into a tiny Go-only image.
 
@@ -22,8 +22,8 @@ hako's broker is **scoped to remote-proxying** and runs as a **container
 sidecar** on hako's private compose network, Docker-managed. The agent reaches
 it by **service DNS** (`http://broker:PORT`) — no host ports, no host-gateway,
 no cross-platform binding wrinkle. The broker needs **no inbound auth** by
-default (only the agent is on that network); mcpeel's gateway token is therefore
-**optional** (a patch makes it so).
+default (only the agent is on that network); the adapters' gateway token is
+therefore **optional** (a patch makes it so).
 
 A per-server **`callHook`** gates chosen tool calls (those in `requireFor`)
 behind a command — see ADR-0010.

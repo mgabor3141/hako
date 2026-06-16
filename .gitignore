@@ -1,2 +1,5 @@
 workspace/
 .env
+# local, host-specific test wiring (e.g. notify-send desktop approval)
+compose.override.yaml
+gateway/hooks.local/

@@ -5,8 +5,10 @@
   passthrough, `--mock`) is built; `up` auto-detects the vault and unseals it
   (masked passphrase piped to the gateway), `seal` encrypts a secret into the
   vault (the secret-entry half of the wizard below), `unlock` re-does the unseal
-  after a gateway restart, and the `hako`->`help` rename is done. The Go binary +
-  bootstrap (below) remain the target.
+  after a gateway restart, and the `hako`->`help` rename is done. The Go engine
+  now exists in `launcher/` at parity (Phase A: reads integration manifests,
+  assembles the stack, wraps compose + vault); the `configure` TUI, the
+  in-process vault (age library + locked memory), and bootstrap delivery remain.
 
 ## Context
 The default secret model needs an interactive unseal, MCP servers need guided

@@ -30,23 +30,26 @@ mounts and permissions only behave on the native filesystem.
 ```mermaid
 flowchart LR
     you(["you (browser)"])
-    fork[("your fork<br/>./agent")]
+    fork[("your fork:<br/>agent/ + hako.toml")]
     up[("upstream MCP servers<br/>e.g. GitHub")]
+    vault[("age vault")]
 
     subgraph priv["Docker: hako private network"]
         subgraph agentc["agent container"]
-            pi["pi agent"]
+            pi["pi + enabled skills"]
             gmuxd["gmuxd"]
-            mise["dev toolchain (mise)"]
         end
         gw["MCP gateway<br/>holds creds + approval gate"]
+        sc["sidecars<br/>e.g. web search"]
     end
 
     you -->|"localhost:8791"| gmuxd
-    fork -.->|"bind mount to /home/agent"| agentc
-    pi -->|"CLI adapters (github, ...)"| gw
+    fork -.->|"bind mount + assemble"| agentc
+    pi -->|"CLI adapters"| gw
+    pi -->|"direct"| sc
     gw -->|"credentials"| up
-    gw -.->|"approval"| you
+    vault -.->|"hako unlock (host)"| gw
+    gw -.->|"approve?"| gmuxd
 ```
 
 - **Your fork is the unit of customization.** `./agent/` is **bind-mounted as
@@ -55,7 +58,8 @@ flowchart LR
 - **The agent holds no host credentials** — the security boundary is the
   *absence* of secrets, not behavior restrictions. When it needs a real tool it
   goes through the **MCP gateway**, which holds the creds and gates sensitive
-  calls behind your approval *(phase 2; see Roadmap)*.
+  calls behind your approval (a `y/N` session in the gmux dashboard). Which tools
+  exist is set by the **integrations** you enable (below).
 
 ## Tools
 
@@ -73,11 +77,45 @@ hako leans on a few well-chosen tools so it stays small and legible:
   freshly-compromised version can be caught or yanked before hako installs it.
 - **bun** — runs pi and the MCP CLI adapters (one fast binary, no node_modules
   churn). `pi update` is rerouted through mise so the pinned core stays pinned.
-- **MCP gateway** *(phase 2)* — a fork of [`mcp-proxy`](https://github.com/TBXark/mcp-proxy)
+- **MCP gateway** — a fork of [`mcp-proxy`](https://github.com/TBXark/mcp-proxy)
   that holds upstream credentials and exposes tools to the agent over the private
-  network, gating chosen calls behind a swappable approval hook. The agent gets
-  curated CLI **adapters** (e.g. `github`, in `agent/.agents/skills/`) and never
-  sees the keys.
+  network, gating chosen calls behind a swappable approval hook (default: a `y/N`
+  session in the gmux dashboard). The agent's CLI **adapters** come from the
+  `integrations/` catalog and never see the keys.
+- **hako (the launcher)** — `./hako` bootstraps a small Go binary that assembles
+  your enabled integrations, wraps `docker compose`, and unseals the vault. Plain
+  `docker compose` still works for the basics.
+
+## Integrations
+
+What the agent can reach is **composable**. Each tool lives in `integrations/` —
+a skill the agent calls, an optional gateway backend, an optional sidecar
+container, plus any secrets/settings it needs. You turn them on in **`hako.toml`**
+(gitignored, so picking tools is never a fork or a merge conflict); disabled ones
+are invisible to the agent — no skill in its context, no gateway route, no
+sidecar.
+
+```sh
+./hako                 # lists the catalog and what's enabled
+# edit hako.toml (a `hako configure` TUI is coming), then:
+./hako up              # assembles only the enabled integrations
+```
+
+Shipped today: **github** (PRs/issues/CI through the gateway) and **websearch**
+(a bundled search sidecar, or your own endpoint). Add more by dropping a folder
+in `integrations/` — see [`integrations/README.md`](./integrations/README.md).
+
+## Secrets
+
+The agent holds none. Credentials live in a single **age-encrypted vault**
+(`vault/secrets.age`) under **one passphrase**, and only the gateway gets them —
+decrypted on your host into locked memory at unlock time, never written to disk.
+
+```sh
+./hako seal github     # paste a token; set the vault passphrase
+./hako up              # prompts for the passphrase and unseals
+./hako unlock          # re-enter it after a gateway restart (which re-seals)
+```
 
 ## Handy in the shell
 
@@ -114,5 +152,8 @@ that file to your agent.
 ## Roadmap
 
 - **Phase 1 — pi + container + gmux** *(done)*: clone-and-up opinionated pi.
-- **Phase 2 — governed tools** *(in progress)*: the MCP gateway + CLI adapters +
-  per-call approval, so the agent reaches real tools while holding no credentials.
+- **Phase 2 — governed tools** *(done)*: the MCP gateway, per-call approval (in
+  gmux), composable integrations, and the age vault — the agent reaches real
+  tools holding no credentials.
+- **Next:** a `hako configure` TUI, and prebuilt launcher releases (so the
+  bootstrap fetches a pinned binary instead of building from source).

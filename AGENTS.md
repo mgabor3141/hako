@@ -39,8 +39,17 @@ Never commit secrets, tokens, or auth.
   gateway backend + sidecar + secrets/settings per `integration.toml`).
   `hako.toml` (gitignored) is the enabled set; `./hako` assembles the enabled
   ones into the stack and generates `gateway/config.json` (ADR-0014).
-  Note: pi rewrites `.pi/agent/settings.json` at runtime (e.g.
-  `lastChangelogVersion`); `git restore` it before committing config changes.
+- `gateway/` — the credential-holding **MCP gateway** (a pinned `mcp-proxy`
+  fork), its compose overlays, the approval hook (`hooks/approve.sh`), and the
+  sealed-boot vault script (`seal/boot.sh`). Holds the creds so the agent never
+  does (ADR-0007/0010/0011).
+- `launcher/` — Go source for the `hako` launcher; root `./hako` is a bootstrap
+  that builds and execs it (ADR-0012). Non-user-facing.
+- `vault/secrets.age` (gitignored) — secrets under one passphrase; `hako unlock`
+  decrypts them on the host (in locked memory) and feeds the gateway.
+
+Note: pi rewrites `.pi/agent/settings.json` at runtime (e.g.
+`lastChangelogVersion`); `git restore` it before committing config changes.
 
 ## Decisions
 

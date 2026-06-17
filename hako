@@ -14,6 +14,23 @@ cd "$ROOT"
 GMUX_URL="http://localhost:8791/"
 FILES="-f compose.yaml -f gateway/compose.gateway.yaml"
 
+# --- integration config (hako.toml) helpers --------------------------------
+# Emit "<integration> <key> <value>" for every key under [integrations.*].
+hako_settings() {
+  _conf="hako.toml"; [ -f "$_conf" ] || _conf="hako.example.toml"
+  [ -f "$_conf" ] || return 0
+  awk '
+    /^[[:space:]]*\[integrations\./ { n=$0; sub(/.*\[integrations\./,"",n); sub(/\].*/,"",n); cur=n; next }
+    /^[[:space:]]*\[/ { cur=""; next }
+    cur != "" && /=/ {
+      k=$0; sub(/=.*/,"",k); gsub(/[[:space:]]/,"",k)
+      v=$0; sub(/[^=]*=[[:space:]]*/,"",v); gsub(/[[:space:]]+$/,"",v); gsub(/^"|"$/,"",v)
+      if (k != "") print cur, k, v
+    }' "$_conf"
+}
+hako_enabled() { hako_settings | awk '$2=="enabled" && $3=="true"{print $1}'; }
+hako_get()     { hako_settings | awk -v n="$1" -v k="$2" '$1==n && $2==k{print $3}'; }
+
 # `--mock` (must come first) swaps in the hermetic github mock backend, so the
 # whole stack runs with zero credentials (testing / the phase-2 tracer).
 if [ "${1:-}" = "--mock" ]; then
@@ -30,6 +47,14 @@ if ls vault/*.age >/dev/null 2>&1; then
   VAULT=1
 fi
 
+# Sidecars: add each enabled integration's compose fragment, unless gated off by
+# its `sidecar` setting (the draft's stand-in for [sidecar].enabled_by).
+for _name in $(hako_enabled); do
+  [ -f "integrations/$_name/compose.yaml" ] || continue
+  [ "$(hako_get "$_name" sidecar)" = "false" ] && continue
+  FILES="$FILES -f integrations/$_name/compose.yaml"
+done
+
 # shellcheck disable=SC2086  # $FILES is intentionally word-split into -f flags
 dc() { docker compose $FILES "$@"; }
 
@@ -39,19 +64,21 @@ dc() { docker compose $FILES "$@"; }
 # will read each integration.toml for settings/sidecars/secret prompts (ADR-0014).
 assemble() {
   command -v jq >/dev/null || { echo "hako: assemble needs jq on the host" >&2; return 1; }
-  conf="hako.toml"; [ -f "$conf" ] || conf="hako.example.toml"
-  enabled=$(awk '
-    /^[[:space:]]*\[integrations\./ { n=$0; sub(/.*\[integrations\./,"",n); sub(/\].*/,"",n); cur=n; next }
-    /^[[:space:]]*\[/             { cur="" }
-    /^[[:space:]]*enabled[[:space:]]*=[[:space:]]*true/ { if (cur != "") print cur }
-  ' "$conf")
+  enabled=$(hako_enabled)
   skilldir="agent/.agents/skills"
   rm -rf "$skilldir"; mkdir -p "$skilldir"
   cfg=$(cat gateway/config.base.json)
+  : > .hako.env
   for name in $enabled; do
     [ -d "integrations/$name/skill" ] && ln -s "/opt/hako/integrations/$name/skill" "$skilldir/$name"
     gj="integrations/$name/gateway.json"
     [ -f "$gj" ] && cfg=$(printf '%s' "$cfg" | jq --argjson v "$(cat "$gj")" --arg k "$name" '.mcpServers[$k]=$v')
+    # non-`enabled` settings -> HAKO_<INT>_<KEY> env (for the skill + compose)
+    nm=$(printf '%s' "$name" | tr '[:lower:]-' '[:upper:]_')
+    hako_settings | awk -v n="$name" '$1==n && $2!="enabled"{print $2, $3}' | while read -r k v; do
+      ku=$(printf '%s' "$k" | tr '[:lower:]-' '[:upper:]_')
+      printf 'HAKO_%s_%s=%s\n' "$nm" "$ku" "$v" >> .hako.env
+    done
   done
   printf '%s\n' "$cfg" > gateway/config.json
   echo "hako: assembled (enabled: ${enabled:-none})"

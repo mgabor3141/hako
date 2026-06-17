@@ -7,3 +7,9 @@
 
 [integrations.github]
 enabled = true
+
+# Web search via a bundled sidecar (or your own endpoint).
+[integrations.websearch]
+enabled = false
+# sidecar = true                      # run the bundled search sidecar (default)
+# url = "https://searx.example.com"   # use this endpoint instead (set sidecar = false)

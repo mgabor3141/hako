@@ -1,0 +1,18 @@
+name    = "websearch"
+summary  = "Web search via a bundled sidecar, or your own endpoint."
+
+# Skill only -- no gateway backend, no secret. The agent calls the sidecar
+# directly (search is an unauthenticated read).
+[skill]
+dir      = "skill"
+commands = ["websearch"]
+
+# Typed settings the user sets in hako.toml (string / number / bool).
+[settings]
+sidecar = { type = "bool",   default = true,  description = "Run the bundled search sidecar." }
+url     = { type = "string", default = "http://websearch:8888", description = "Search endpoint (set this when sidecar = false)." }
+
+# Sidecar container, included only when the `sidecar` setting is true.
+[sidecar]
+compose    = "compose.yaml"
+enabled_by = "sidecar"

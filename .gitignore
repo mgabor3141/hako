@@ -8,3 +8,4 @@ vault/
 # user's enabled-integration set + generated gateway config
 hako.toml
 gateway/config.json
+.hako.env

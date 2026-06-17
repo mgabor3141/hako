@@ -1,0 +1,12 @@
+# Bundled search sidecar. A mock for the tracer (swap for real SearXNG later by
+# changing this image + the skill's response parsing). Reachable on the private
+# network as `websearch:8888`. Included only when the integration's `sidecar`
+# setting is true (integration.toml: [sidecar].enabled_by = "sidecar").
+services:
+  websearch:
+    image: hashicorp/http-echo:1.0.0
+    container_name: hako-websearch
+    restart: unless-stopped
+    command:
+      - "-listen=:8888"
+      - '-text={"results":[{"title":"Example Domain","url":"https://example.com","content":"Illustrative result from the bundled mock."},{"title":"hako","url":"https://github.com/mgabor3141/hako","content":"The containerized agent harness."}]}'

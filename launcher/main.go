@@ -92,7 +92,7 @@ func main() {
 		}
 		unlock(cfg)
 	case "configure":
-		fatal("configure: the TUI is not built yet (Phase B). Edit hako.toml for now.")
+		runConfigure(cfg)
 	case "", "-h", "--help", "help":
 		usage(cfg)
 	default:
@@ -187,7 +187,7 @@ usage: hako [--mock] <command> [args]
   down            stop and remove the stack
   restart         down, then up
   assemble        (re)generate the stack from hako.toml (skills + gateway config)
-  configure       enable/disable integrations + set secrets (TUI; coming soon)
+  configure       enable/disable integrations + set settings + seal secrets (TUI)
   seal [name]     encrypt a secret into the vault (default name: github)
   unlock          re-enter the vault passphrase (after a gateway restart)
   ps | logs [svc] | shell | pi | auth | open

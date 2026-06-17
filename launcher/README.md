@@ -16,5 +16,7 @@ gateway config, resolves settings into `.hako.env`, selects sidecars), and wraps
 Status: **Phase A + A2 done** -- manifest-driven assembly, compose wrapping, and
 an **in-process vault** (`filippo.io/age` + locked memory; a single multi-secret
 `vault/secrets.age` under one global passphrase; the gateway no longer
-decrypts). The shell launcher is retired. Next: **Phase B** (the `configure`
-TUI) and **Phase C** (CI release binaries the bootstrap downloads + verifies).
+decrypts). The shell launcher is retired. **Phase B** is done too: a `configure`
+TUI (bubbletea) toggles integrations, sets typed settings, and seals secrets,
+writing hako.toml. Next: **Phase C** (CI release binaries the bootstrap
+downloads + verifies).

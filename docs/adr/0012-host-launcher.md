@@ -8,7 +8,8 @@
   `./hako` is now the **bootstrap** (model C) — it builds the Go binary from
   source for now (needs Go) and will fetch a pinned, checksummed release once CI
   publishes them. The `hako`->`help` rename is done. The `configure` TUI
-  (Phase B) and the release pipeline (Phase C) remain.
+  (Phase B) is **built** (bubbletea: toggle integrations, set typed settings,
+  seal secrets, writes hako.toml). The release pipeline (Phase C) remains.
 
 ## Context
 The default secret model needs an interactive unseal, MCP servers need guided

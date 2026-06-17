@@ -96,8 +96,7 @@ are invisible to the agent — no skill in its context, no gateway route, no
 sidecar.
 
 ```sh
-./hako                 # lists the catalog and what's enabled
-# edit hako.toml (a `hako configure` TUI is coming), then:
+./hako configure       # a TUI to toggle integrations, set options, seal secrets
 ./hako up              # assembles only the enabled integrations
 ```
 
@@ -155,5 +154,5 @@ that file to your agent.
 - **Phase 2 — governed tools** *(done)*: the MCP gateway, per-call approval (in
   gmux), composable integrations, and the age vault — the agent reaches real
   tools holding no credentials.
-- **Next:** a `hako configure` TUI, and prebuilt launcher releases (so the
-  bootstrap fetches a pinned binary instead of building from source).
+- **Next:** prebuilt launcher releases, so the bootstrap fetches a pinned,
+  checksummed binary instead of building it from source.

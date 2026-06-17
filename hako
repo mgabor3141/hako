@@ -33,6 +33,30 @@ fi
 # shellcheck disable=SC2086  # $FILES is intentionally word-split into -f flags
 dc() { docker compose $FILES "$@"; }
 
+# Assemble the running stack from the enabled set in hako.toml: link enabled
+# skills into pi's (gitignored) dir, and merge enabled gateway backends into the
+# generated gateway/config.json. Draft: directory conventions + jq; the Go engine
+# will read each integration.toml for settings/sidecars/secret prompts (ADR-0014).
+assemble() {
+  command -v jq >/dev/null || { echo "hako: assemble needs jq on the host" >&2; return 1; }
+  conf="hako.toml"; [ -f "$conf" ] || conf="hako.example.toml"
+  enabled=$(awk '
+    /^[[:space:]]*\[integrations\./ { n=$0; sub(/.*\[integrations\./,"",n); sub(/\].*/,"",n); cur=n; next }
+    /^[[:space:]]*\[/             { cur="" }
+    /^[[:space:]]*enabled[[:space:]]*=[[:space:]]*true/ { if (cur != "") print cur }
+  ' "$conf")
+  skilldir="agent/.agents/skills"
+  rm -rf "$skilldir"; mkdir -p "$skilldir"
+  cfg=$(cat gateway/config.base.json)
+  for name in $enabled; do
+    [ -d "integrations/$name/skill" ] && ln -s "/opt/hako/integrations/$name/skill" "$skilldir/$name"
+    gj="integrations/$name/gateway.json"
+    [ -f "$gj" ] && cfg=$(printf '%s' "$cfg" | jq --argjson v "$(cat "$gj")" --arg k "$name" '.mcpServers[$k]=$v')
+  done
+  printf '%s\n' "$cfg" > gateway/config.json
+  echo "hako: assembled (enabled: ${enabled:-none})"
+}
+
 # Read a line with the terminal echo off (masked input). Falls back gracefully
 # when stdin isn't a tty (e.g. piped in tests).
 read_secret() {
@@ -84,6 +108,7 @@ usage: hako [--mock] <command> [args]
   up [--build]    build/start the stack (detached); unseals the vault if present
   down            stop and remove the stack
   restart         down, then up
+  assemble        (re)generate the stack from hako.toml (skills + gateway config)
   seal [name]     encrypt a secret into the vault (default name: github)
   unlock          re-enter the vault passphrase (after a gateway restart)
   ps              container status
@@ -102,9 +127,10 @@ cmd=${1:-}
 [ "$#" -gt 0 ] && shift || true
 
 case "$cmd" in
-  up)      dc up -d "$@"; [ "$VAULT" = 1 ] && unlock; echo "hako: up — gmux UI at $GMUX_URL  (run 'hako auth' for the token)" ;;
+  up)      assemble; dc up -d "$@"; [ "$VAULT" = 1 ] && unlock; echo "hako: up — gmux UI at $GMUX_URL  (run 'hako auth' for the token)" ;;
   down)    dc down "$@" ;;
-  restart) dc down; dc up -d "$@"; [ "$VAULT" = 1 ] && unlock ;;
+  restart) dc down; assemble; dc up -d "$@"; [ "$VAULT" = 1 ] && unlock ;;
+  assemble) assemble ;;
   seal)    seal "$@" ;;
   unlock)  [ "$VAULT" = 1 ] || { echo "hako: no vault (vault/*.age) found" >&2; exit 1; }; unlock ;;
   ps)      dc ps "$@" ;;

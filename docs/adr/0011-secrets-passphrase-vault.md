@@ -16,7 +16,9 @@ Three tiers, all converging on the gateway reading the secret from a tmpfs file
 at **`/run/secrets/<name>`** (so it never appears in `docker inspect`):
 
 1. **Default — passphrase-vault (the seal/unseal model, à la Vault).** Secrets
-   live **`age`-encrypted in a mounted folder**; the gateway boots **sealed** and
+   live **`age`-encrypted in a mounted folder** as a **single vault under one
+   global passphrase** (one unlock for everything — per-secret passphrases just
+   push people to one weak shared password); the gateway boots **sealed** and
    blocks until unsealed. `hako up` prompts for the passphrase (masked input)
    and pipes it to `docker exec -i gateway hako-unlock` over **stdin** — never in
    args/env/history. The gateway decrypts into **memory** and only then launches

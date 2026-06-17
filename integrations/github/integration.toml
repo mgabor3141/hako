@@ -1,0 +1,16 @@
+name    = "github"
+summary  = "GitHub PRs, issues, and CI via the `github` CLI (reads + gated writes)."
+
+# A skill (CLI adapter) linked into pi's skill dir when enabled.
+[skill]
+dir      = "skill"
+commands = ["github"]   # adapter CLIs to put on PATH (default: [name])
+
+# A gateway backend merged into the generated gateway config.
+[gateway]
+config = "gateway.json"
+
+# Secrets this integration needs (sealed into the single global vault).
+[[secrets]]
+env    = "GITHUB_MCP_TOKEN"
+prompt = "GitHub fine-grained PAT (read-only is plenty)"

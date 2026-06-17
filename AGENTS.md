@@ -31,11 +31,14 @@ Never commit secrets, tokens, or auth.
   background (`mise install`), then execs the CMD `gmuxd run` (foreground).
 - `compose.yaml` — ports, mounts, env (below).
 - `agent/` — the bind-mounted home. Ships the opinions: pi config
-  (`.pi/agent/`), shell/git/starship config, the **toolchain manifest +
-  lock** (`.config/mise/config.toml`, `.config/mise/mise.lock`), and the **MCP
-  CLI adapters** (`.agents/skills/`, e.g. `github`; also surfaced at the
-  repo-root `skills/` symlink). Its `.gitignore`
-  whitelists only those and ignores all installs, runtime state, and projects.
+  (`.pi/agent/`), shell/git/starship config, and the **toolchain manifest +
+  lock** (`.config/mise/config.toml`, `.config/mise/mise.lock`). Its `.gitignore`
+  whitelists only those and ignores all installs, runtime state, and projects
+  (including the generated `.agents/skills/` — assembled from `integrations/`).
+- `integrations/` — the catalog of composable integrations (any of skill +
+  gateway backend + sidecar + secrets/settings per `integration.toml`).
+  `hako.toml` (gitignored) is the enabled set; `./hako` assembles the enabled
+  ones into the stack and generates `gateway/config.json` (ADR-0014).
   Note: pi rewrites `.pi/agent/settings.json` at runtime (e.g.
   `lastChangelogVersion`); `git restore` it before committing config changes.
 

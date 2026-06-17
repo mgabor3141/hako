@@ -1,0 +1,12 @@
+{
+  "mcpProxy": {
+    "addr": ":8096",
+    "name": "hako-gateway",
+    "version": "0.1.0",
+    "type": "streamable-http",
+    "options": {
+      "logEnabled": true
+    }
+  },
+  "mcpServers": {}
+}

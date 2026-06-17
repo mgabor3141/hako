@@ -14,10 +14,6 @@
 .pi/agent/*
 !.pi/agent/settings.json
 !.pi/agent/AGENTS.md
-!.agents/
-.agents/*
-!.agents/skills/
-!.agents/skills/**
 !.config/
 .config/*
 !.config/starship.toml

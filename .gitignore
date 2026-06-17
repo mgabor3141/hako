@@ -5,3 +5,6 @@ compose.override.yaml
 gateway/hooks.local/
 # the age-encrypted secret vault is user data, never committed
 vault/
+# user's enabled-integration set + generated gateway config
+hako.toml
+gateway/config.json

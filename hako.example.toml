@@ -1,0 +1,9 @@
+# hako integrations -- copy to hako.toml (gitignored) or run `hako configure`.
+#
+# Each directory under integrations/ can be enabled here. Disabled (or absent)
+# integrations are invisible to the agent: no skill in pi's context, no gateway
+# backend, no sidecar. Some integrations expose settings -- see their
+# integration.toml for what they declare.
+
+[integrations.github]
+enabled = true

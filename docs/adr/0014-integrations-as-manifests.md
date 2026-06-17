@@ -17,11 +17,20 @@ MCP server, a scraper, a search engine).
 An **integration** is a self-describing unit in a shipped, in-repo catalog at
 `integrations/<name>/`: an `integration.toml` (metadata + declared needs) plus
 **any subset** of {a skill, a gateway-backend snippet, a sidecar compose
-fragment, required secret(s)}. Skill-only, sidecar-only, backend-only, and
-combinations are all valid.
+fragment, required secret(s), typed settings}. Skill-only, sidecar-only,
+backend-only, and combinations are all valid.
+
+Integrations declare **typed settings** (`string`/`number`/`bool`, with a default
+and description) alongside their secrets; the user sets values per integration
+in `hako.toml`. Resolved settings and secrets are exposed to assembly as env
+vars (`HAKO_<INT>_<SETTING>` for settings; the declared `env` name for secrets),
+so `gateway.json` and sidecar compose fragments stay declarative and just
+reference `${...}`. A `[sidecar]` may name a bool setting via `enabled_by` to
+gate whether its container spins up (so an integration can offer "use the
+bundled sidecar" vs "point at my own URL" purely through settings).
 
 The **enabled set** is a user-owned, gitignored `hako.toml` (on/off per
-integration; richer per-integration settings may come later, but not now). hako
+integration, plus the integration's declared settings). hako
 ships a tracked `hako.example.toml`; a `hako configure` TUI manages the real
 file. So choosing tools is **config, not a fork**: never a tracked-file edit,
 never a manual gitignore, and `git pull` adds catalog entries without touching
@@ -50,8 +59,8 @@ not a pi extension; pi stays oblivious.
 - `gateway/config.json`, pi's skill dir, the compose `-f` list, and the set of
   active vault secrets become **generated/selected artifacts** (gitignored), not
   hand-edited. The hand-written `config.json` retires.
-- The vault (ADR-0011) generalizes to **one blob per integration secret**;
-  unlock decrypts all secrets for the enabled set.
+- All secrets live in a **single vault under one global passphrase** (ADR-0011);
+  one unlock decrypts everything the enabled set needs.
 - Each sidecar is more private-network surface and another pinned image
   (ADR-0008). Credentials stay with the gateway/sidecar, never the agent -- the
   ADR-0002 boundary holds.

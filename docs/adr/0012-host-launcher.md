@@ -9,7 +9,12 @@
   source for now (needs Go) and will fetch a pinned, checksummed release once CI
   publishes them. The `hako`->`help` rename is done. The `configure` TUI
   (Phase B) is **built** (bubbletea: toggle integrations, set typed settings,
-  seal secrets, writes hako.toml). The release pipeline (Phase C) remains.
+  seal secrets, writes hako.toml). **Phase C** (release pipeline) is in place:
+  `.goreleaser.yaml` + a tag-triggered CI workflow build pinned, checksummed
+  binaries, and the bootstrap downloads + sha256-verifies them against the
+  committed `launcher/checksums.txt` when Go is absent. The first tagged release
+  (and committing the `HAKO_VERSION` + `checksums.txt` pin) is the remaining
+  one-time step.
 
 ## Context
 The default secret model needs an interactive unseal, MCP servers need guided

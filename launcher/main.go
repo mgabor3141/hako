@@ -21,6 +21,9 @@ import (
 
 const gmuxURL = "http://localhost:8791/"
 
+// version is set by the release build (-X main.version); "dev" for source builds.
+var version = "dev"
+
 func main() {
 	memguard.CatchInterrupt()
 	defer memguard.Purge()
@@ -80,6 +83,8 @@ func main() {
 		dc(files, "exec", "hako", "gmuxd", "auth")
 	case "open":
 		openBrowser(gmuxURL)
+	case "version", "--version":
+		fmt.Printf("hako %s\n", version)
 	case "seal":
 		name := "github"
 		if len(args) > 0 {
@@ -190,7 +195,7 @@ usage: hako [--mock] <command> [args]
   configure       enable/disable integrations + set settings + seal secrets (TUI)
   seal [name]     encrypt a secret into the vault (default name: github)
   unlock          re-enter the vault passphrase (after a gateway restart)
-  ps | logs [svc] | shell | pi | auth | open
+  ps | logs [svc] | shell | pi | auth | open | version
   <other>         passed straight through to docker compose
 
 integrations (integrations/, toggled in hako.toml):

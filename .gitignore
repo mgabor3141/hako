@@ -11,3 +11,7 @@ gateway/config.json
 .hako.env
 # compiled launcher binary (built from launcher/*.go)
 launcher/hako
+
+# launcher: pinned-binary download cache + goreleaser output
+.hako/
+dist/

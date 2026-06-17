@@ -154,5 +154,6 @@ that file to your agent.
 - **Phase 2 — governed tools** *(done)*: the MCP gateway, per-call approval (in
   gmux), composable integrations, and the age vault — the agent reaches real
   tools holding no credentials.
-- **Next:** prebuilt launcher releases, so the bootstrap fetches a pinned,
-  checksummed binary instead of building it from source.
+- **Next:** cut the first tagged launcher release, so hosts without Go fetch a
+  pinned, checksummed binary (the pipeline and the verifying bootstrap are in
+  place).

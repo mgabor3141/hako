@@ -1,24 +1,74 @@
 #!/bin/sh
-# hako -- bootstrap for the host launcher (ADR-0012).
+# hako -- bootstrap for the host launcher (ADR-0012 model C).
 #
-# Builds the Go launcher in launcher/ on first run (or whenever its source
-# changes) and execs it. This is the interim form of model C: once CI publishes
-# pinned, checksummed release binaries, this script will download and verify one
-# instead of building. Until then it builds locally, which needs a Go toolchain.
+# Two paths:
+#   * Go present  -> build launcher/ from source (the dev + power-user path).
+#   * no Go       -> download the pinned release binary for this host and verify
+#                    its sha256 against the committed launcher/checksums.txt,
+#                    then cache + exec it. No toolchain needed.
+#
+# Force the download path with HAKO_DOWNLOAD=1 (to test it with Go installed).
+# Override the release host with HAKO_RELEASE_BASE (for local testing).
 set -eu
 
 unset CDPATH
 here=$(cd -- "$(dirname -- "$0")" && pwd)
-bin="$here/launcher/hako"
 src="$here/launcher"
 
-# (re)build when the binary is missing or older than any source file
-if [ ! -x "$bin" ] || [ -n "$(find "$src" \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \) -newer "$bin" 2>/dev/null)" ]; then
-  if ! command -v go >/dev/null 2>&1; then
-    echo "hako: building the launcher needs Go (https://go.dev/dl/). Prebuilt releases are coming." >&2
-    exit 1
+# --- source build path -------------------------------------------------------
+if [ "${HAKO_DOWNLOAD:-0}" != 1 ] && command -v go >/dev/null 2>&1; then
+  dev="$src/hako"
+  if [ ! -x "$dev" ] || [ -n "$(find "$src" \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \) -newer "$dev" 2>/dev/null)" ]; then
+    ( cd "$src" && go build -o hako . )
   fi
-  ( cd "$src" && go build -o hako . )
+  cd "$here"
+  exec "$dev" "$@"
+fi
+
+# --- pinned download path -----------------------------------------------------
+version=$(cat "$src/HAKO_VERSION" 2>/dev/null || true)
+if [ -z "$version" ]; then
+  echo "hako: no Go toolchain, and no pinned release yet (launcher/HAKO_VERSION)." >&2
+  echo "      install Go (https://go.dev/dl/) or wait for a tagged release." >&2
+  exit 1
+fi
+
+os=$(uname -s | tr '[:upper:]' '[:lower:]')
+arch=$(uname -m)
+case "$arch" in
+  x86_64 | amd64) arch=amd64 ;;
+  aarch64 | arm64) arch=arm64 ;;
+  *) echo "hako: unsupported arch $arch" >&2; exit 1 ;;
+esac
+asset="hako_${os}_${arch}.tar.gz"
+bin="$here/.hako/$version/hako"
+
+sha256() {
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'
+  else shasum -a 256 "$1" | awk '{print $1}'; fi
+}
+fetch() {
+  if command -v curl >/dev/null 2>&1; then curl -fsSL "$1" -o "$2"
+  else wget -qO "$2" "$1"; fi
+}
+
+if [ ! -x "$bin" ]; then
+  base="${HAKO_RELEASE_BASE:-https://github.com/mgabor3141/hako/releases/download}"
+  want=$(awk -v f="$asset" '$2 == f {print $1}' "$src/checksums.txt" 2>/dev/null || true)
+  [ -n "$want" ] || { echo "hako: no checksum for $asset in launcher/checksums.txt" >&2; exit 1; }
+
+  tmp=$(mktemp -d)
+  trap 'rm -rf "$tmp"' EXIT
+  echo "hako: fetching $asset ($version)..." >&2
+  fetch "$base/$version/$asset" "$tmp/$asset" || { echo "hako: download failed" >&2; exit 1; }
+
+  got=$(sha256 "$tmp/$asset")
+  [ "$want" = "$got" ] || { echo "hako: checksum mismatch for $asset -- refusing to run" >&2; exit 1; }
+
+  tar -xzf "$tmp/$asset" -C "$tmp"
+  mkdir -p "$(dirname "$bin")"
+  cp "$tmp/hako" "$bin"
+  chmod 0755 "$bin"
 fi
 
 cd "$here"

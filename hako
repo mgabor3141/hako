@@ -1,171 +1,25 @@
 #!/bin/sh
-# hako — host-side launcher for the agent stack.
+# hako -- bootstrap for the host launcher (ADR-0012).
 #
-# Interim shell version (ADR-0012): the eventual front door is a pinned Go
-# binary fetched by a small bootstrap. For now this just wraps the docker
-# compose overlays so you don't type the incantation by hand. Runnable from
-# anywhere — it resolves the stack relative to its own location.
+# Builds the Go launcher in launcher/ on first run (or whenever its source
+# changes) and execs it. This is the interim form of model C: once CI publishes
+# pinned, checksummed release binaries, this script will download and verify one
+# instead of building. Until then it builds locally, which needs a Go toolchain.
 set -eu
 
 unset CDPATH
-ROOT=$(cd -- "$(dirname -- "$0")" && pwd)
-cd "$ROOT"
+here=$(cd -- "$(dirname -- "$0")" && pwd)
+bin="$here/launcher/hako"
+src="$here/launcher"
 
-GMUX_URL="http://localhost:8791/"
-FILES="-f compose.yaml -f gateway/compose.gateway.yaml"
-
-# --- integration config (hako.toml) helpers --------------------------------
-# Emit "<integration> <key> <value>" for every key under [integrations.*].
-hako_settings() {
-  _conf="hako.toml"; [ -f "$_conf" ] || _conf="hako.example.toml"
-  [ -f "$_conf" ] || return 0
-  awk '
-    /^[[:space:]]*\[integrations\./ { n=$0; sub(/.*\[integrations\./,"",n); sub(/\].*/,"",n); cur=n; next }
-    /^[[:space:]]*\[/ { cur=""; next }
-    cur != "" && /=/ {
-      k=$0; sub(/=.*/,"",k); gsub(/[[:space:]]/,"",k)
-      v=$0; sub(/[^=]*=[[:space:]]*/,"",v); gsub(/[[:space:]]+$/,"",v); gsub(/^"|"$/,"",v)
-      if (k != "") print cur, k, v
-    }' "$_conf"
-}
-hako_enabled() { hako_settings | awk '$2=="enabled" && $3=="true"{print $1}'; }
-hako_get()     { hako_settings | awk -v n="$1" -v k="$2" '$1==n && $2==k{print $3}'; }
-
-# `--mock` (must come first) swaps in the hermetic github mock backend, so the
-# whole stack runs with zero credentials (testing / the phase-2 tracer).
-if [ "${1:-}" = "--mock" ]; then
-  FILES="$FILES -f test/compose.mock.yaml"
-  shift
-fi
-
-# An age-encrypted vault (ADR-0011) means the gateway boots sealed and needs a
-# passphrase to unseal. Detected automatically: if present, add the overlay and
-# have `up` unseal after starting.
-VAULT=0
-if ls vault/*.age >/dev/null 2>&1; then
-  FILES="$FILES -f gateway/compose.vault.yaml"
-  VAULT=1
-fi
-
-# Sidecars: add each enabled integration's compose fragment, unless gated off by
-# its `sidecar` setting (the draft's stand-in for [sidecar].enabled_by).
-for _name in $(hako_enabled); do
-  [ -f "integrations/$_name/compose.yaml" ] || continue
-  [ "$(hako_get "$_name" sidecar)" = "false" ] && continue
-  FILES="$FILES -f integrations/$_name/compose.yaml"
-done
-
-# shellcheck disable=SC2086  # $FILES is intentionally word-split into -f flags
-dc() { docker compose $FILES "$@"; }
-
-# Assemble the running stack from the enabled set in hako.toml: link enabled
-# skills into pi's (gitignored) dir, and merge enabled gateway backends into the
-# generated gateway/config.json. Draft: directory conventions + jq; the Go engine
-# will read each integration.toml for settings/sidecars/secret prompts (ADR-0014).
-assemble() {
-  command -v jq >/dev/null || { echo "hako: assemble needs jq on the host" >&2; return 1; }
-  enabled=$(hako_enabled)
-  skilldir="agent/.agents/skills"
-  rm -rf "$skilldir"; mkdir -p "$skilldir"
-  cfg=$(cat gateway/config.base.json)
-  : > .hako.env
-  for name in $enabled; do
-    [ -d "integrations/$name/skill" ] && ln -s "/opt/hako/integrations/$name/skill" "$skilldir/$name"
-    gj="integrations/$name/gateway.json"
-    [ -f "$gj" ] && cfg=$(printf '%s' "$cfg" | jq --argjson v "$(cat "$gj")" --arg k "$name" '.mcpServers[$k]=$v')
-    # non-`enabled` settings -> HAKO_<INT>_<KEY> env (for the skill + compose)
-    nm=$(printf '%s' "$name" | tr '[:lower:]-' '[:upper:]_')
-    hako_settings | awk -v n="$name" '$1==n && $2!="enabled"{print $2, $3}' | while read -r k v; do
-      ku=$(printf '%s' "$k" | tr '[:lower:]-' '[:upper:]_')
-      printf 'HAKO_%s_%s=%s\n' "$nm" "$ku" "$v" >> .hako.env
-    done
-  done
-  printf '%s\n' "$cfg" > gateway/config.json
-  echo "hako: assembled (enabled: ${enabled:-none})"
-}
-
-# Read a line with the terminal echo off (masked input). Falls back gracefully
-# when stdin isn't a tty (e.g. piped in tests).
-read_secret() {
-  _old=$(stty -g 2>/dev/null) || true
-  stty -echo 2>/dev/null || true
-  IFS= read -r "$1"
-  stty "${_old:-sane}" 2>/dev/null || true
-  printf '\n'
-}
-
-# Encrypt a secret into the vault (age, via the gateway image which ships it).
-# Usage: hako seal [name]   (default: github)
-seal() {
-  name="${1:-github}"
-  case "$name" in *[!a-zA-Z0-9_-]*) echo "hako: bad secret name '$name'" >&2; return 1;; esac
-  img="hako-gateway"
-  docker image inspect "$img" >/dev/null 2>&1 || { echo "hako: building the gateway image (first run)..."; dc build gateway; }
-  secret=''; p1=''; p2=''
-  printf 'secret value for "%s" (hidden): ' "$name"; read_secret secret
-  [ -n "$secret" ] || { echo "hako: empty secret, aborting" >&2; return 1; }
-  printf 'vault passphrase (hidden): '; read_secret p1
-  printf 'confirm passphrase (hidden): '; read_secret p2
-  [ "$p1" = "$p2" ] || { echo "hako: passphrases do not match" >&2; return 1; }
-  mkdir -p vault
-  if printf '%s' "$secret" | docker run --rm -i -e PASS="$p1" -v "$ROOT/vault:/out" --entrypoint sh "$img" -c '
-        umask 077; cat > /tmp/s
-        printf "%s\n%s\n" "$PASS" "$PASS" | script -qec "age -p -o /out/'"$name"'.age /tmp/s" /dev/null >/dev/null 2>&1
-        rm -f /tmp/s; [ -s "/out/'"$name"'.age" ]'; then
-    echo "hako: sealed vault/$name.age -- start with 'hako up' (or 'hako unlock')"
-  else
-    echo "hako: seal FAILED" >&2; return 1
+# (re)build when the binary is missing or older than any source file
+if [ ! -x "$bin" ] || [ -n "$(find "$src" \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \) -newer "$bin" 2>/dev/null)" ]; then
+  if ! command -v go >/dev/null 2>&1; then
+    echo "hako: building the launcher needs Go (https://go.dev/dl/). Prebuilt releases are coming." >&2
+    exit 1
   fi
-}
+  ( cd "$src" && go build -o hako . )
+fi
 
-# Prompt (masked) for the vault passphrase and pipe it to the gateway's unlock.
-unlock() {
-  for _ in $(seq 1 30); do docker exec hako-gateway true 2>/dev/null && break; sleep 0.5; done
-  pass=''
-  printf 'hako: vault passphrase: '; read_secret pass
-  printf '%s' "$pass" | docker exec -i hako-gateway /seal/hako-unlock
-}
-
-usage() {
-  cat <<'EOF'
-hako — launcher for the agent stack
-
-usage: hako [--mock] <command> [args]
-
-  up [--build]    build/start the stack (detached); unseals the vault if present
-  down            stop and remove the stack
-  restart         down, then up
-  assemble        (re)generate the stack from hako.toml (skills + gateway config)
-  seal [name]     encrypt a secret into the vault (default name: github)
-  unlock          re-enter the vault passphrase (after a gateway restart)
-  ps              container status
-  logs [service]  follow logs (default: all services)
-  shell           interactive zsh in the agent container
-  pi              launch the coding agent (a gmux session)
-  auth            print the gmux login URL + token
-  open            open the gmux web UI in your browser
-  <other>         passed straight through to `docker compose`
-
-  --mock          use the hermetic github mock backend (no credentials)
-EOF
-}
-
-cmd=${1:-}
-[ "$#" -gt 0 ] && shift || true
-
-case "$cmd" in
-  up)      assemble; dc up -d "$@"; [ "$VAULT" = 1 ] && unlock; echo "hako: up — gmux UI at $GMUX_URL  (run 'hako auth' for the token)" ;;
-  down)    dc down "$@" ;;
-  restart) dc down; assemble; dc up -d "$@"; [ "$VAULT" = 1 ] && unlock ;;
-  assemble) assemble ;;
-  seal)    seal "$@" ;;
-  unlock)  [ "$VAULT" = 1 ] || { echo "hako: no vault (vault/*.age) found" >&2; exit 1; }; unlock ;;
-  ps)      dc ps "$@" ;;
-  logs)    dc logs -f "$@" ;;
-  shell)   docker exec -it hako zsh ;;
-  pi)      docker exec -it hako gmux pi ;;
-  auth)    dc exec hako gmuxd auth ;;
-  open)    xdg-open "$GMUX_URL" 2>/dev/null || open "$GMUX_URL" 2>/dev/null || echo "$GMUX_URL" ;;
-  ""|-h|--help|help) usage ;;
-  *)       dc "$cmd" "$@" ;;
-esac
+cd "$here"
+exec "$bin" "$@"

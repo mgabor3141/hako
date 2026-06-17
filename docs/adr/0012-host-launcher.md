@@ -1,14 +1,14 @@
 # ADR-0012: Host-side `hako` launcher
 
-- **Status:** Accepted — 2026-06-16. An interim POSIX shell `./hako`
-  (`up`/`down`/`restart`/`seal`/`unlock`/`ps`/`logs`/`shell`/`pi`/`auth`/`open` +
-  passthrough, `--mock`) is built; `up` auto-detects the vault and unseals it
-  (masked passphrase piped to the gateway), `seal` encrypts a secret into the
-  vault (the secret-entry half of the wizard below), `unlock` re-does the unseal
-  after a gateway restart, and the `hako`->`help` rename is done. The Go engine
-  now exists in `launcher/` at parity (Phase A: reads integration manifests,
-  assembles the stack, wraps compose + vault); the `configure` TUI, the
-  in-process vault (age library + locked memory), and bootstrap delivery remain.
+- **Status:** Accepted — 2026-06-16. The launcher is a **Go engine** in
+  `launcher/` (up/down/restart/assemble/seal/unlock/ps/logs/shell/pi/auth/open +
+  passthrough, `--mock`): reads integration manifests, assembles the stack, wraps
+  compose, and does the **in-process vault** (`filippo.io/age` + locked memory;
+  single global passphrase). The interim shell launcher is **retired**; root
+  `./hako` is now the **bootstrap** (model C) — it builds the Go binary from
+  source for now (needs Go) and will fetch a pinned, checksummed release once CI
+  publishes them. The `hako`->`help` rename is done. The `configure` TUI
+  (Phase B) and the release pipeline (Phase C) remain.
 
 ## Context
 The default secret model needs an interactive unseal, MCP servers need guided

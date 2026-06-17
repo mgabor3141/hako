@@ -1,8 +1,9 @@
 # ADR-0011: Secrets — passphrase-vault by default
 
-- **Status:** Accepted — 2026-06-16. Vault tracer **built**: `age` blob -> sealed
-  gateway -> `hako unlock` (passphrase over stdin) -> token in tmpfs, validated
-  against real GitHub. `.env` (tier 3) remains the no-vault fallback.
+- **Status:** Accepted — 2026-06-16. **Built, in-process:** one `vault/secrets.age`
+  under a single global passphrase; `hako unlock` decrypts it on the host
+  (`filippo.io/age` + locked memory) and pipes the env into the gateway's tmpfs
+  (the gateway no longer decrypts). Validated against real GitHub.
 
 ## Context
 The gateway holds the real upstream credentials (ADR-0002/0007). Since it's a
@@ -19,14 +20,13 @@ at **`/run/secrets/<name>`** (so it never appears in `docker inspect`):
    live **`age`-encrypted in a mounted folder** as a **single vault under one
    global passphrase** (one unlock for everything — per-secret passphrases just
    push people to one weak shared password); the gateway boots **sealed** and
-   blocks until unsealed. `hako up` prompts for the passphrase (masked input)
-   and pipes it to `docker exec -i gateway hako-unlock` over **stdin** — never in
-   args/env/history. The gateway decrypts into **memory** and only then launches
-   mcp-proxy. Restart re-seals. (age refuses a non-tty passphrase, so `hako-unlock`
-   pty-wraps it via `script`.) The plaintext is never on the host disk, the
-   encrypted blob is useless without the passphrase, and the passphrase is never
-   stored. The gateway *is* the in-memory secret agent (ssh-agent/gpg-agent
-   pattern): everything goes through it, nothing else sees the credential.
+   blocks until unsealed. `hako unlock` (host) prompts for the passphrase
+   (masked) and **decrypts the vault in-process** (`filippo.io/age` + locked,
+   zeroized memory — no subprocess, no pty), then pipes the resulting env into
+   the gateway's tmpfs; the gateway sources it and launches mcp-proxy. The
+   gateway never sees the passphrase or the ciphertext. Restart clears the tmpfs
+   and re-seals. The plaintext is never on the host disk, the encrypted blob is
+   useless without the passphrase, and the passphrase is never stored.
 2. **`se://` (Docker Secrets Engine / OS keychain)** — documented opt-down.
    Lower friction (rides the login session), encrypted at rest, no file/env/
    history. Bundled with Docker Desktop; CE injection is on Docker's roadmap.

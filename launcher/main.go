@@ -15,12 +15,16 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/awnumar/memguard"
 	"golang.org/x/term"
 )
 
 const gmuxURL = "http://localhost:8791/"
 
 func main() {
+	memguard.CatchInterrupt()
+	defer memguard.Purge()
+
 	root, err := findRoot()
 	if err != nil {
 		fatal(err.Error())
@@ -156,6 +160,10 @@ func browserCmds(url string) [][]string {
 	return [][]string{{"xdg-open", url}}
 }
 
+// stdinBuf is shared so successive readSecret calls on a pipe don't each
+// buffer-and-drop the remaining lines.
+var stdinBuf = bufio.NewReader(os.Stdin)
+
 // readSecret reads a line with echo off on a tty; on a pipe (tests) it reads
 // a plain line so the command stays scriptable.
 func readSecret(prompt string) string {
@@ -166,7 +174,7 @@ func readSecret(prompt string) string {
 		fmt.Fprintln(os.Stderr)
 		return string(b)
 	}
-	line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+	line, _ := stdinBuf.ReadString('\n')
 	return strings.TrimRight(line, "\r\n")
 }
 

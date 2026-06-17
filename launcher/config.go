@@ -120,6 +120,15 @@ func (c *Config) Enabled() []*Integration {
 	return out
 }
 
+func (c *Config) find(name string) *Integration {
+	for _, it := range c.Ints {
+		if it.Name == name {
+			return it
+		}
+	}
+	return nil
+}
+
 func (c *Config) HasVault() bool {
 	m, _ := filepath.Glob(filepath.Join(c.Root, "vault", "*.age"))
 	return len(m) > 0

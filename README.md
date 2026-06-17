@@ -108,7 +108,8 @@ in `integrations/` — see [`integrations/README.md`](./integrations/README.md).
 
 The agent holds none. Credentials live in a single **age-encrypted vault**
 (`vault/secrets.age`) under **one passphrase**, and only the gateway gets them —
-decrypted on your host into locked memory at unlock time, never written to disk.
+decrypted on your host at unlock time and handed straight to the gateway, never
+written to disk.
 
 ```sh
 ./hako seal github     # paste a token; set the vault passphrase

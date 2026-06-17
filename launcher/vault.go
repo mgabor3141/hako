@@ -149,12 +149,8 @@ func unlock(cfg *Config) {
 	}
 	defer buf.Destroy()
 
-	// build the sourceable env (export KEY='value'), shell-quoted.
-	var env bytes.Buffer
-	for k, v := range parseEnv(buf.Bytes()) {
-		fmt.Fprintf(&env, "export %s='%s'\n", k, strings.ReplaceAll(v, "'", `'\''`))
-	}
-	defer zero(env.Bytes())
+	env := renderEnv(parseEnv(buf.Bytes()))
+	defer zero(env)
 
 	for i := 0; i < 30; i++ {
 		if exec.Command("docker", "exec", "hako-gateway", "true").Run() == nil {
@@ -164,12 +160,22 @@ func unlock(cfg *Config) {
 	}
 	c := exec.Command("docker", "exec", "-i", "hako-gateway", "sh", "-c",
 		"umask 077; mkdir -p /run/hako; cat > /run/hako/env")
-	c.Stdin = bytes.NewReader(env.Bytes())
+	c.Stdin = bytes.NewReader(env)
 	c.Stderr = os.Stderr
 	if err := c.Run(); err != nil {
 		fatal("unlock: could not deliver secrets to the gateway: " + err.Error())
 	}
 	fmt.Println("hako: unsealed.")
+}
+
+// renderEnv turns secrets into shell-sourceable `export KEY='value'` lines,
+// single-quoting values so any character (quotes, spaces, $) survives sourcing.
+func renderEnv(secrets map[string]string) []byte {
+	var b bytes.Buffer
+	for k, v := range secrets {
+		fmt.Fprintf(&b, "export %s='%s'\n", k, strings.ReplaceAll(v, "'", `'\''`))
+	}
+	return b.Bytes()
 }
 
 func zero(b []byte) {

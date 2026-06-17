@@ -49,10 +49,10 @@ func TestConfigureModelAndSave(t *testing.T) {
 	if cfg.Ints[1].Values["sidecar"] != "false" {
 		t.Fatalf("sidecar should be false, got %q", cfg.Ints[1].Values["sidecar"])
 	}
-	send("j")          // -> url
-	send("enter")      // edit url
-	send("x.com")      // type
-	send("enter")      // confirm
+	send("j")     // -> url
+	send("enter") // edit url
+	send("x.com") // type
+	send("enter") // confirm
 	if got := cfg.Ints[1].Values["url"]; got != "x.com" {
 		t.Fatalf("url = %q, want x.com", got)
 	}

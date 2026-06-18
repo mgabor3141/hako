@@ -1,7 +1,11 @@
 # ADR-0014: Integrations are composable manifests selected by config
 
-- **Status:** Accepted (prototyping) -- 2026-06-16. Design banked; schema + first
-  end-to-end draft to follow.
+- **Status:** Accepted -- 2026-06-16. **Built and validated:** the catalog ships
+  github (skill + gateway backend + secret), websearch (skill + sidecar +
+  settings), and backups (sidecar + setting, no skill); `hako.toml` plus the
+  `hako configure` TUI select the enabled set, and the assembler generates the
+  skill links, the merged gateway config, the settings env, and the sidecar/
+  secret wiring.
 
 ## Context
 hako should accumulate many tools over its life (github, gcloud, Google
@@ -69,7 +73,8 @@ not a pi extension; pi stays oblivious.
   dir per the enabled set (github becomes the first manifest).
 - The **assembler + `hako configure` TUI** (config merge, compose selection,
   masked secret prompts, vault wiring) is the feature that justifies the Go
-  launcher (ADR-0012); it subsumes the clean secret-handling case. The Go core
-  grows `configure`/`up`/`seal`/`unlock`; the shell `./hako` is the stopgap.
+  launcher (ADR-0012); it subsumes the clean secret-handling case. The Go
+  launcher provides `configure`/`up`/`seal`/`unlock`/assemble; the earlier shell
+  `./hako` is retired.
 - **In-repo catalog only** for now: no third-party or user-dropped integrations,
   which defers a provenance/trust question.

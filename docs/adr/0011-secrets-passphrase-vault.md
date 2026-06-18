@@ -13,27 +13,25 @@ first time, so the **default must be as safe as possible**, with lighter options
 for people who know what they're doing.
 
 ## Decision
-Three tiers, all converging on the gateway reading the secret from a tmpfs file
-at **`/run/secrets/<name>`** (so it never appears in `docker inspect`):
+The **passphrase-vault** (the seal/unseal model, à la Vault) is the mechanism.
+Secrets live **`age`-encrypted in a mounted folder** as a **single vault under
+one global passphrase** (one unlock for everything — per-secret passphrases just
+push people to one weak shared password); the gateway boots **sealed** and blocks
+until unsealed. `hako unlock` (host) prompts for the passphrase (masked) and
+**decrypts the vault in-process** (`filippo.io/age` + locked, zeroized memory —
+no subprocess, no pty), then pipes the resulting env into the gateway's tmpfs at
+**`/run/hako/env`** (so the secret never appears in `docker inspect`); the
+gateway sources it and launches mcp-proxy. The gateway never sees the passphrase
+or the ciphertext. Restart clears the tmpfs and re-seals. The plaintext is never
+on the host disk, the encrypted blob is useless without the passphrase, and the
+passphrase is never stored.
 
-1. **Default — passphrase-vault (the seal/unseal model, à la Vault).** Secrets
-   live **`age`-encrypted in a mounted folder** as a **single vault under one
-   global passphrase** (one unlock for everything — per-secret passphrases just
-   push people to one weak shared password); the gateway boots **sealed** and
-   blocks until unsealed. `hako unlock` (host) prompts for the passphrase
-   (masked) and **decrypts the vault in-process** (`filippo.io/age` + locked,
-   zeroized memory — no subprocess, no pty), then pipes the resulting env into
-   the gateway's tmpfs; the gateway sources it and launches mcp-proxy. The
-   gateway never sees the passphrase or the ciphertext. Restart clears the tmpfs
-   and re-seals. The plaintext is never on the host disk, the encrypted blob is
-   useless without the passphrase, and the passphrase is never stored.
-2. **`se://` (Docker Secrets Engine / OS keychain)** — documented opt-down.
-   Lower friction (rides the login session), encrypted at rest, no file/env/
-   history. Bundled with Docker Desktop; CE injection is on Docker's roadmap.
-3. **`0600` gitignored file** — simplest fallback, plaintext at rest.
-
-The **source is never prescribed** — a secret-manager CLI (`op run`, `vault`,
-keychain) or a file can populate any tier; we document, we don't mandate.
+The **source of a secret is never prescribed**: the vault is what hako ships and
+wires, but you can populate it from a secret-manager CLI (`op run`, `vault`,
+keychain). Encrypted-at-rest alternatives (a Docker Secrets Engine / OS keychain,
+`se://`) are a reasonable opt-down for those who know what they're doing; hako
+does not build them in. (An earlier draft framed these as built-in "tiers"; in
+practice only the vault was implemented.)
 
 ## Consequences
 Strongest-by-default protects against other users, **same-user non-root
@@ -41,5 +39,6 @@ processes** (process memory in the gateway's namespace; default `ptrace_scope`),
 and disk-at-rest (backups, theft, stray copy). It does **not** beat root or the
 Docker daemon — no software-only scheme does without a TPM/enclave. Cost: a
 **passphrase on every gateway restart** (the deliberate seal/unseal tradeoff);
-`se://` trades that for login-session convenience. Implement the vault with
-`age` + a `hako-unlock` utility after the tracer proves the loop.
+an `se://`-style keychain would trade that for login-session convenience. Built
+in-process in the Go launcher (`filippo.io/age`); no separate decrypt utility or
+pty hack, and no `age` in the gateway image.

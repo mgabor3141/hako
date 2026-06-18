@@ -2,9 +2,9 @@
 
 - **Status:** Accepted — 2026-06-16 (supersedes the 2026-06-15 "host-local"
   revision, which itself resolved the 2026-06-14 host-or-sidecar draft — see the
-  history note below). Wired and validated end-to-end in the 2a tracer: the
-  gateway sidecar fronts a github-shaped mock over the private network, with
-  `callHook` gating writes.
+  history note below). Wired and validated end-to-end against the real GitHub MCP
+  over the private network, with `callHook` gating writes. (The github-shaped mock
+  used in the early tracer has since been retired.)
 
 ## Context
 Phase 2 goal: the agent reaches real tools without holding upstream credentials
@@ -30,9 +30,9 @@ therefore **optional** (a patch makes it so).
 A per-server **`callHook`** gates chosen tool calls (those in `requireFor`)
 behind a command — see ADR-0010.
 
-**Host-process mode is documented, not default**, for power users who need
-**stdio** servers with their host runtimes, or native OS notifications without a
-D-Bus mount. The same Go binary serves both.
+**Host-process mode is possible, not default** (and not yet written up), for
+power users who need **stdio** servers with their host runtimes, or native OS
+notifications without a D-Bus mount. The same Go binary serves both.
 
 ## Consequences
 Docker — the one runtime hako already requires — gives lifecycle, restart, and

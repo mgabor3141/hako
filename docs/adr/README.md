@@ -16,5 +16,5 @@ supersession chain); the status line notes what it supersedes.
 - [0010](0010-tool-call-approval.md) — Tool-call approval is a swappable hook
 - [0011](0011-secrets-passphrase-vault.md) — Secrets: passphrase-vault by default
 - [0012](0012-host-launcher.md) — Host-side `hako` launcher
-- [0013](0013-adapters-inlined.md) — The MCP CLI adapters are inlined into hako
+- [0013](0013-adapters-inlined.md) — The MCP CLI adapters are inlined into hako *(placement superseded by 0014)*
 - [0014](0014-integrations-as-manifests.md) — Integrations are composable manifests selected by config

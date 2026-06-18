@@ -1,9 +1,9 @@
 # ADR-0010: Tool-call approval is a swappable hook
 
-- **Status:** Accepted — 2026-06-16 (amended 2026-06-16: the default channel is
-  the shipped default is a gmux approval session — see Decision). `callHook` is
-  wired and interactively verified in the tracer (approve / deny / policy-deny,
-  via a real human answering in the browser).
+- **Status:** Accepted — 2026-06-16 (amended 2026-06-16: the shipped default is a
+  gmux approval session — see Decision). `callHook` is wired and interactively
+  verified (approve / deny / policy-deny, via a real human answering in the
+  browser).
 
 ## Context
 A sandboxed agent reaching real systems through the gateway (ADR-0007) needs a
@@ -32,8 +32,9 @@ container, not the gateway) turns each request into a `y/N` gmux session that
 **persists in the dashboard until answered**, OS-agnostic and browser-first.
 Exited prompts linger with their verdict as an approval log. (Rough edges: you
 find the session by hand and there's no one-click dismiss — a dedicated
-persistent approvals TUI + a gmux notify primitive are the follow-up.)
-`HAKO_APPROVE_ALL` is a documented headless/CI escape hatch.
+persistent approvals TUI + a gmux notify primitive are the follow-up.) There is
+no approval-bypass env var: an earlier `HAKO_APPROVE_ALL` escape hatch was
+removed as too easy a footgun.
 
 ## Consequences
 The hook is one swappable command, so any channel drops in: a local

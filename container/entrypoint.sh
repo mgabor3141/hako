@@ -28,6 +28,8 @@ if command -v mise >/dev/null 2>&1 && command -v gmux >/dev/null 2>&1; then
     # wait for gmuxd (started below by exec) to be accepting sessions
     for _ in $(seq 1 150); do gmuxd status >/dev/null 2>&1 && break; sleep 0.2; done
     cd "$HOME"
+    # $HOME is expanded by the inner bash -lc, not here:
+    # shellcheck disable=SC2016
     gmux bash -lc '
       if mise install --yes; then
         mise reshim >/dev/null 2>&1 || true

@@ -9,6 +9,8 @@ set -eu
 env="/run/hako/env"
 echo "hako-gateway: SEALED -- waiting for unlock (run: hako unlock)" >&2
 while [ ! -s "$env" ]; do sleep 1; done
+# a runtime file, not present at lint time:
+# shellcheck source=/dev/null
 . "$env"   # export KEY='value' lines written by the host
 echo "hako-gateway: unsealed -- starting mcp-proxy" >&2
 exec /usr/local/bin/mcp-proxy "$@"

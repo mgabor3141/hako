@@ -1,0 +1,48 @@
+name: checks
+
+# Cross-cutting validation, on every push/PR (all jobs are fast):
+#   - shellcheck the load-bearing shell (the approval gate, sealed boot, the
+#     bootstrap, ...);
+#   - run the skill contract tests (hermetic, no credentials);
+#   - secret-scan the working tree -- "ships no secrets" is a core invariant
+#     (ADR-0002). Scans the current files, not history (the throwaway tracer PAT
+#     in old commits is known and slated for revocation).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y shellcheck
+      - run: shellcheck hako $(find gateway container integrations -name '*.sh')
+
+  skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: contract tests
+        run: |
+          shopt -s nullglob
+          for t in integrations/*/skill/test.ts; do
+            echo "== $t"
+            ( cd "$(dirname "$t")" && bun test.ts )
+          done
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: gitleaks (working tree)
+        run: |
+          v=8.30.1
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${v}/gitleaks_${v}_linux_x64.tar.gz" \
+            | tar -xz gitleaks
+          ./gitleaks detect --no-git --source . --redact

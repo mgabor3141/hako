@@ -22,9 +22,10 @@ jobs:
         with:
           go-version-file: launcher/go.mod
           cache-dependency-path: launcher/go.sum
-      - name: vet, test, cross-build
+      - name: gofmt, vet, test, cross-build
         working-directory: launcher
         run: |
+          test -z "$(gofmt -l .)" || { echo 'unformatted (run gofmt -w .):'; gofmt -l .; exit 1; }
           go vet ./...
           go test ./...
           for p in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do

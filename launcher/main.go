@@ -52,17 +52,21 @@ func main() {
 	switch cmd {
 	case "up":
 		mustAssemble(cfg)
-		dc(files, append([]string{"up", "-d"}, args...)...)
+		// --remove-orphans reconciles: a now-disabled integration's container is
+		// torn down even though its overlay is no longer in the compose set.
+		dc(files, append([]string{"up", "-d", "--remove-orphans"}, args...)...)
 		if cfg.HasVault() {
 			unlock(cfg)
 		}
 		fmt.Printf("hako: up -- gmux UI at %s  (run 'hako auth' for the token)\n", gmuxURL)
 	case "down":
-		dc(files, append([]string{"down"}, args...)...)
+		// --remove-orphans so down cleans up every container in the hako project,
+		// including sidecars from integrations disabled since they were started.
+		dc(files, append([]string{"down", "--remove-orphans"}, args...)...)
 	case "restart":
-		dc(files, "down")
+		dc(files, "down", "--remove-orphans")
 		mustAssemble(cfg)
-		dc(files, "up", "-d")
+		dc(files, "up", "-d", "--remove-orphans")
 		if cfg.HasVault() {
 			unlock(cfg)
 		}

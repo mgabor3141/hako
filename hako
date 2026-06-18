@@ -1,74 +1,44 @@
 #!/bin/sh
-# hako -- bootstrap for the host launcher (ADR-0012 model C).
+# hako -- bootstrap for the host launcher (ADR-0012).
 #
-# Two paths:
-#   * Go present  -> build launcher/ from source (the dev + power-user path).
-#   * no Go       -> download the pinned release binary for this host and verify
-#                    its sha256 against the committed launcher/checksums.txt,
-#                    then cache + exec it. No toolchain needed.
+# Builds the Go launcher in launcher/ and execs it, caching the binary by a hash
+# of that source so it rebuilds only when the source changes. Uses the host Go
+# toolchain when present; otherwise builds in a pinned container -- Docker is
+# hako's one hard dependency. No release pipeline and no downloaded binary: you
+# always run a build of the exact source in your checkout.
 #
-# Force the download path with HAKO_DOWNLOAD=1 (to test it with Go installed).
-# Override the release host with HAKO_RELEASE_BASE (for local testing).
+# HAKO_FORCE_CONTAINER=1 builds in the container even when host Go is present.
 set -eu
 
 unset CDPATH
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 src="$here/launcher"
 
-# --- source build path -------------------------------------------------------
-if [ "${HAKO_DOWNLOAD:-0}" != 1 ] && command -v go >/dev/null 2>&1; then
-  dev="$src/hako"
-  if [ ! -x "$dev" ] || [ -n "$(find "$src" \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \) -newer "$dev" 2>/dev/null)" ]; then
-    ( cd "$src" && go build -o hako . )
-  fi
-  cd "$here"
-  exec "$dev" "$@"
-fi
+# Pinned Go toolchain for the container build (ADR-0008); = golang:1.23-alpine.
+builder="golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e37109a626ca30d6151c8348d380b5f"
 
-# --- pinned download path -----------------------------------------------------
-version=$(cat "$src/HAKO_VERSION" 2>/dev/null || true)
-if [ -z "$version" ]; then
-  echo "hako: no Go toolchain, and no pinned release yet (launcher/HAKO_VERSION)." >&2
-  echo "      install Go (https://go.dev/dl/) or wait for a tagged release." >&2
-  exit 1
-fi
+sha256() { if command -v sha256sum >/dev/null 2>&1; then sha256sum; else shasum -a 256; fi; }
 
-os=$(uname -s | tr '[:upper:]' '[:lower:]')
-arch=$(uname -m)
-case "$arch" in
-  x86_64 | amd64) arch=amd64 ;;
-  aarch64 | arm64) arch=arm64 ;;
-  *) echo "hako: unsupported arch $arch" >&2; exit 1 ;;
-esac
-asset="hako_${os}_${arch}.tar.gz"
-bin="$here/.hako/$version/hako"
-
-sha256() {
-  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'
-  else shasum -a 256 "$1" | awk '{print $1}'; fi
-}
-fetch() {
-  if command -v curl >/dev/null 2>&1; then curl -fsSL "$1" -o "$2"
-  else wget -qO "$2" "$1"; fi
-}
+# Cache key: a content hash of the launcher source (clone-stable, unlike mtimes).
+hash=$(cd "$src" && { find . -type f \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \) \
+  | sort | while IFS= read -r f; do printf '== %s\n' "$f"; cat "$f"; done; } | sha256 | cut -c1-16)
+bin="$here/.hako/$hash/hako"
 
 if [ ! -x "$bin" ]; then
-  base="${HAKO_RELEASE_BASE:-https://github.com/mgabor3141/hako/releases/download}"
-  want=$(awk -v f="$asset" '$2 == f {print $1}' "$src/checksums.txt" 2>/dev/null || true)
-  [ -n "$want" ] || { echo "hako: no checksum for $asset in launcher/checksums.txt" >&2; exit 1; }
-
-  tmp=$(mktemp -d)
-  trap 'rm -rf "$tmp"' EXIT
-  echo "hako: fetching $asset ($version)..." >&2
-  fetch "$base/$version/$asset" "$tmp/$asset" || { echo "hako: download failed" >&2; exit 1; }
-
-  got=$(sha256 "$tmp/$asset")
-  [ "$want" = "$got" ] || { echo "hako: checksum mismatch for $asset -- refusing to run" >&2; exit 1; }
-
-  tar -xzf "$tmp/$asset" -C "$tmp"
   mkdir -p "$(dirname "$bin")"
-  cp "$tmp/hako" "$bin"
-  chmod 0755 "$bin"
+  if [ "${HAKO_FORCE_CONTAINER:-0}" != 1 ] && command -v go >/dev/null 2>&1; then
+    ( cd "$src" && go build -trimpath -ldflags "-X main.version=$hash" -o "$bin" . )
+  else
+    command -v docker >/dev/null 2>&1 || { echo "hako: need Go or Docker to build the launcher." >&2; exit 1; }
+    echo "hako: building the launcher in a container (one-time, until the source changes)..." >&2
+    cache="$here/.hako/cache"
+    mkdir -p "$cache"
+    docker run --rm \
+      --user "$(id -u):$(id -g)" \
+      -v "$src:/src:ro" -v "$cache:/cache" -v "$(dirname "$bin"):/out" -w /src \
+      -e GOCACHE=/cache/build -e GOMODCACHE=/cache/mod -e HOME=/cache \
+      "$builder" go build -trimpath -ldflags "-X main.version=$hash" -o /out/hako .
+  fi
 fi
 
 cd "$here"

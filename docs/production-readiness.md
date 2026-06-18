@@ -46,11 +46,10 @@ known rough edges, and one-time steps to close before that.
 
 ## Delivery
 
-- The launcher ships per-commit **hash releases** (CI builds + publishes archives
-  + checksums on every launcher change to `main`); the bootstrap pins a SHA and
-  verifies the download. Bumping the pin is a committed `HAKO_VERSION` +
-  `checksums.txt` diff. mac/WSL2 and arm64 builds are produced but unverified on
-  those hosts.
+- The launcher is **built from source** by the bootstrap (host Go, else a
+  digest-pinned `golang` container), cached by source hash -- no release
+  pipeline, no downloaded binary. The container path is verified on Linux/amd64;
+  mac/WSL2 and arm64 are designed-for but unverified on those hosts.
 - The `configure` TUI's **seal path** uses the standard `tea.ExecProcess` pattern
   but has not been driven through a full interactive session in CI.
 

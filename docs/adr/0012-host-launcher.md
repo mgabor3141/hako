@@ -5,17 +5,13 @@
   passthrough): reads integration manifests, assembles the stack, wraps
   compose, and does the **in-process vault** (`filippo.io/age` + locked memory;
   single global passphrase). The interim shell launcher is **retired**; root
-  `./hako` is now the **bootstrap** (model C) — it builds the Go binary from
-  source for now (needs Go) and will fetch a pinned, checksummed release once CI
-  publishes them. The `hako`->`help` rename is done. The `configure` TUI
+  `./hako` is now the **bootstrap** — it builds the launcher (host Go, else a
+  digest-pinned `golang` container) and caches it by source hash. The
+  `hako`->`help` rename is done. The `configure` TUI
   (Phase B) is **built** (bubbletea: toggle integrations, set typed settings,
-  seal secrets, writes hako.toml). **Phase C** (release pipeline) is in place:
-  `.github/workflows/launcher.yml` builds + tests every commit and, on `main`,
-  publishes a **hash release** (archives + checksums under a release tagged with
-  the commit SHA -- commit-hash identity, no semver, matching the gateway's
-  digest model in ADR-0008). When Go is absent the bootstrap downloads the
-  pinned SHA's archive and sha256-verifies it against the committed
-  `launcher/checksums.txt`.
+  seal secrets, writes hako.toml). **Delivery** is build-from-source, cached by
+  source hash -- no release pipeline and no downloaded binary, so the binary
+  never skews from the source you pulled.
 
 ## Context
 The default secret model needs an interactive unseal, MCP servers need guided
@@ -36,13 +32,17 @@ Ship a host-side **`hako` Go binary** as the front door. `hako up`:
 entry point. Go is chosen to reuse gmux's browser code and ship one static
 cross-platform artifact, matching the gmux/gateway pinned-binary ethos.
 
-**Delivery (model C):** commit a tiny, readable `./hako` **bootstrap script**.
-With a Go toolchain it builds the launcher from source; without one it downloads
-the **pinned, checksummed** `hako` binary -- a **per-commit hash release** (CI-
-built, no semver tags; matching the gateway digest model) -- into a local cache,
-verifies the sha256, and execs it. `git pull` bumps the pin. So the only
-committed artifact is a script you can read in seconds; the binary follows
-ADR-0008.
+**Delivery:** commit a tiny, readable `./hako` **bootstrap script** that builds
+the launcher and caches the binary by a hash of the launcher source (rebuild
+only on change), then execs it. With a host Go toolchain it builds directly;
+without one it builds in a **digest-pinned `golang` container** -- Docker is
+hako's one hard dependency, so this always works -- run as the host UID so the
+binary isn't root-owned. No release pipeline and no downloaded binary: you always
+run a build of the exact source in your checkout, so there's nothing to pin or
+verify beyond the repo you cloned (the toolchain image is digest-pinned per
+ADR-0008; deps are `go.sum`-pinned). The earlier model -- a CI-published,
+checksum-pinned hash release for no-Go hosts -- was dropped: leaning on Docker
+removes the release pipeline, the in-repo pin, and any binary-vs-source skew.
 
 To avoid a name clash, the in-container cheatsheet command is renamed
 `hako` → **`help`** (a zsh function, human shell only).
@@ -50,8 +50,8 @@ To avoid a name clash, the in-container cheatsheet command is renamed
 ## Consequences
 `git clone … && cd hako && ./hako up` with no Go toolchain, no manual download,
 no committed binary (dodging repo bloat, multi-platform commits, and the
-"is-the-blob-the-source?" audit problem — provenance comes from a CI-built
-hash release, with SLSA attestations available later). Masked passphrase input
+"is-the-blob-the-source?" audit problem — there's no blob; you build your own
+checkout's source in a pinned toolchain). Masked passphrase input
 reveals length to a shoulder-surfer — accepted for first-timer clarity. The
-launcher is now a fourth pinned artifact to maintain alongside mise/gmux/ffmpeg/
-gateway.
+launcher itself is not a pinned artifact (it's built from in-repo source); only
+its build toolchain image is pinned, alongside mise/gmux/ffmpeg/gateway.

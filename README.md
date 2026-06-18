@@ -17,9 +17,9 @@ docker compose exec hako gmux pi      # launch the agent (authenticate it once)
 
 Your pi sessions show up live at <http://localhost:8791>. There's also a host
 launcher — `./hako up`, `./hako shell`, `./hako pi`, … (run `./hako` for the
-list). `./hako` is a bootstrap: with Go it builds a small binary from source, and
-without Go it downloads a pinned, checksum-verified prebuilt -- then it assembles
-your enabled integrations and drives the stack.
+list). `./hako` is a bootstrap that builds a small Go binary (with host Go, or in
+a pinned container if you don't have Go -- Docker is enough), caches it, then
+assembles your enabled integrations and drives the stack.
 
 **Windows / WSL2:** run from inside your WSL2 distro (Docker Desktop WSL
 integration on) and **clone into the Linux home (`~`), not `/mnt/c/...`** — bind

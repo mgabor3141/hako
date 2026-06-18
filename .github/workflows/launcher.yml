@@ -46,6 +46,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_SHA" launcher/dist/* \
-            --prerelease --title "$GITHUB_SHA" \
+          # tag is sha-<full> -- GitHub forbids tags that are a bare 40-hex SHA.
+          gh release create "sha-$GITHUB_SHA" launcher/dist/* \
+            --prerelease --title "sha-$GITHUB_SHA" \
             --notes "Per-commit launcher build. Pin via launcher/HAKO_VERSION + checksums.txt."

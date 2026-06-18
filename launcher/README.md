@@ -36,10 +36,10 @@ Every push to `main` produces a hash release automatically. To adopt one (the
 same shape as bumping the gateway digest):
 
 ```sh
-sha=<commit on main>
-curl -fsSL "https://github.com/mgabor3141/hako/releases/download/$sha/checksums.txt" \
+tag="sha-$(git rev-parse HEAD)"   # a built commit on main
+curl -fsSL "https://github.com/mgabor3141/hako/releases/download/$tag/checksums.txt" \
   > launcher/checksums.txt
-echo "$sha" > launcher/HAKO_VERSION
+echo "$tag" > launcher/HAKO_VERSION
 ```
 
 Commit both. Pinning the checksums in-repo (not trusting the release blob) is the

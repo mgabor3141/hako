@@ -8,9 +8,9 @@ known rough edges, and one-time steps to close before that.
 
 ## Before you trust it with real credentials
 
-- **Revoke the tracer PAT and re-seal under a strong passphrase.** The dev vault
-  was sealed with the throwaway passphrase `[redacted]` and a read-only token.
-  `hako seal github` a real secret under a real passphrase; revoke the old PAT.
+- **Seal real secrets under a strong passphrase.** `hako seal github` with your
+  own token and a real passphrase. (Development used a throwaway, read-only token
+  under a throwaway passphrase, both since retired/revoked.)
 - **The secret reaches mcp-proxy as a process env var.** `hako unlock` decrypts
   on the host (locked buffer) and pipes the env in; the gateway sources it, so
   the value is in the mcp-proxy process environment. It is *not* in

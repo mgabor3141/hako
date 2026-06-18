@@ -27,7 +27,7 @@ gateway config generated, sidecars composed, secrets pulled from the vault).
 Skills are small, agent-optimized CLIs that talk to an MCP endpoint (the hako
 gateway). Curated for agent ergonomics: minimal token cost, one call per
 question, errors that teach the next action. They run under `bun` (in hako the
-CLI is placed on `PATH` and `MCP_GATEWAY_URL` is wired for you). The CLI never
+CLI is placed on `PATH` and its gateway endpoint is wired for you). The CLI never
 holds upstream credentials -- the gateway does. Each ships contract tests
 against a local mock (no credentials):
 

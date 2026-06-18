@@ -23,12 +23,6 @@ if [ "$tool" = "merge_pull_request" ]; then
   exit 1
 fi
 
-# headless / CI escape hatch: approve without a prompt (no human present)
-if [ "${HAKO_APPROVE_ALL:-0}" = "1" ]; then
-  log "APPROVE (HAKO_APPROVE_ALL)"
-  exit 0
-fi
-
 # shared dir must be writable by the (unprivileged) hako-side watcher too
 mkdir -p "$dir" && chmod 0777 "$dir" 2>/dev/null || true
 

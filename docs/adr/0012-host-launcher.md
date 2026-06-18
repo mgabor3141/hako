@@ -2,7 +2,7 @@
 
 - **Status:** Accepted — 2026-06-16. The launcher is a **Go engine** in
   `launcher/` (up/down/restart/assemble/seal/unlock/ps/logs/shell/pi/auth/open +
-  passthrough, `--mock`): reads integration manifests, assembles the stack, wraps
+  passthrough): reads integration manifests, assembles the stack, wraps
   compose, and does the **in-process vault** (`filippo.io/age` + locked memory;
   single global passphrase). The interim shell launcher is **retired**; root
   `./hako` is now the **bootstrap** (model C) — it builds the Go binary from

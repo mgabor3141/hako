@@ -1,6 +1,6 @@
 {
   "transportType": "streamable-http",
-  "url": "${GITHUB_MCP_URL}",
+  "url": "https://api.githubcopilot.com/mcp/",
   "headers": {
     "Authorization": "Bearer ${GITHUB_MCP_TOKEN}"
   },

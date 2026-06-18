@@ -10,9 +10,9 @@ services:
   gateway:
     entrypoint: ["/seal/boot.sh"]
     command: ["--config", "/config/config.json"]
-    environment:
-      # sealed: blank the token the gateway overlay would otherwise inject
-      GITHUB_MCP_TOKEN: ""
+    # No secret env here: boot.sh blocks until `hako unlock` pipes the decrypted
+    # secrets into the tmpfs below, sources them, then starts mcp-proxy. Generic
+    # -- nothing integration-specific.
     volumes:
       - ./gateway/seal:/seal:ro
     tmpfs:

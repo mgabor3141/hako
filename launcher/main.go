@@ -37,10 +37,6 @@ func main() {
 	}
 
 	args := os.Args[1:]
-	mock := false
-	if len(args) > 0 && args[0] == "--mock" {
-		mock, args = true, args[1:]
-	}
 	cmd := ""
 	if len(args) > 0 {
 		cmd, args = args[0], args[1:]
@@ -50,7 +46,7 @@ func main() {
 	if err != nil {
 		fatal(err.Error())
 	}
-	files := composeFiles(cfg, mock)
+	files := composeFiles(cfg)
 
 	switch cmd {
 	case "up":
@@ -186,7 +182,7 @@ func readSecret(prompt string) string {
 func usage(cfg *Config) {
 	fmt.Print(`hako -- launcher for the agent stack
 
-usage: hako [--mock] <command> [args]
+usage: hako <command> [args]
 
   up [--build]    assemble + start (detached); unseals the vault if present
   down            stop and remove the stack

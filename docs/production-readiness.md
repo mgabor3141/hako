@@ -31,14 +31,6 @@ known rough edges, and one-time steps to close before that.
 
 ## Integrations / composability
 
-- **The gateway overlay is GitHub-specific.** `gateway/compose.gateway.yaml`
-  hardcodes `GITHUB_MCP_URL`/`GITHUB_MCP_TOKEN` on the gateway and
-  `MCP_GATEWAY_URL: .../github/` on the agent. Today github is the only
-  gateway-backed integration, so it works -- but a *second* one would need its
-  upstream URL/secret env and its per-integration gateway route generated from
-  the manifest, not hand-wired in the shared overlay. The "compose any subset"
-  promise (ADR-0014) is met for skills + sidecars, only partly for multiple
-  gateway backends.
 - **websearch ships a mock.** The bundled sidecar is `hashicorp/http-echo`
   returning two canned results -- it demonstrates the sidecar + typed-settings
   mechanism, it does not search. Point `url` at a real endpoint (and adjust the
@@ -51,8 +43,6 @@ known rough edges, and one-time steps to close before that.
   no push notification, no one-click dismiss. Unanswered requests **fail closed**
   after a TTL (900s). A persistent approvals view (and a gmux notify primitive)
   are the intended improvements (ADR-0010).
-- **`HAKO_APPROVE_ALL=1` bypasses approval entirely** -- it exists for the mock
-  and headless/CI runs. Never set it in production.
 
 ## Delivery
 
@@ -64,6 +54,6 @@ known rough edges, and one-time steps to close before that.
 
 ## Tested against
 
-- One real upstream (GitHub's hosted MCP) plus the in-repo mock. Other MCP
+- One real upstream (GitHub's hosted MCP) via a read-only token. Other MCP
   servers, other OSes (mac/WSL2 are designed-for but unverified), and arm64 have
   not been exercised.

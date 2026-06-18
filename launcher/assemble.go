@@ -12,14 +12,17 @@ import (
 // container; skill symlinks point here so they resolve in-container.
 const catalogMount = "/opt/hako/integrations"
 
+// gatewayRoute is the agent-facing base of the in-network gateway; it matches
+// the gateway service name + addr in gateway/compose.gateway.yaml and
+// gateway/config.base.json. Each gateway integration is served at
+// <gatewayRoute>/<name>/.
+const gatewayRoute = "http://gateway:8096"
+
 // composeFiles is the ordered -f list for docker compose: base + gateway,
-// the vault overlay when a vault exists, the mock when asked, and each enabled
-// integration's sidecar (when its gate is on).
-func composeFiles(cfg *Config, mock bool) []string {
+// the vault overlay when a vault exists, and each enabled integration's sidecar
+// (when its gate is on).
+func composeFiles(cfg *Config) []string {
 	f := []string{"-f", "compose.yaml", "-f", "gateway/compose.gateway.yaml"}
-	if mock {
-		f = append(f, "-f", "test/compose.mock.yaml")
-	}
 	if cfg.HasVault() {
 		f = append(f, "-f", "gateway/compose.vault.yaml")
 	}
@@ -97,6 +100,13 @@ func assemble(cfg *Config) error {
 		nm := envKey(it.Name)
 		for k, v := range it.Values {
 			fmt.Fprintf(&env, "HAKO_%s_%s=%s\n", nm, envKey(k), v)
+		}
+	}
+	// gateway integrations: wire the agent's route to each (no auth -- the
+	// private network is the boundary). The skill reads <NAME>_MCP_URL.
+	for _, it := range enabled {
+		if it.Gateway != nil {
+			fmt.Fprintf(&env, "%s_MCP_URL=%s/%s/\n", strings.ToUpper(it.Name), gatewayRoute, it.Name)
 		}
 	}
 	if err := os.WriteFile(filepath.Join(cfg.Root, ".hako.env"), []byte(env.String()), 0o644); err != nil {

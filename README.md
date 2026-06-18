@@ -162,5 +162,5 @@ that file to your agent.
 
 hako is a working prototype, not yet hardened for real-credential use —
 [`docs/production-readiness.md`](docs/production-readiness.md) is the honest list
-of placeholders and rough edges (mock search backend, GitHub-coupled gateway
-overlay, digest pinning, the dev vault's throwaway secret, …).
+of placeholders and rough edges (mock search backend, digest pinning, the dev
+vault's throwaway secret, …).

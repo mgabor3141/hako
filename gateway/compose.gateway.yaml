@@ -22,18 +22,15 @@ services:
       - ./gateway/config.json:/config/config.json:ro
       - ./gateway/hooks:/hooks:ro
       - approvals:/tmp/approvals
-    environment:
-      # The upstream MCP endpoint + token the gateway holds (the agent never
-      # sees these). Defaults to GitHub's hosted remote MCP.
-      GITHUB_MCP_URL: ${GITHUB_MCP_URL:-https://api.githubcopilot.com/mcp/}
-      GITHUB_MCP_TOKEN: ${GITHUB_MCP_TOKEN:-}
+    # Per-integration upstream URLs are literals in the generated config.json;
+    # secrets (tokens) arrive from the vault (compose.vault.yaml). The agent
+    # never sees either -- nothing integration-specific lives in this overlay.
 
   hako:
     # The agent reaches the gateway by service DNS on the private compose
-    # network — no host ports. Token optional (the network is private).
+    # network -- no host ports, no token (the private network is the boundary).
+    # `hako assemble` wires each gateway integration's route into .hako.env.
     environment:
-      MCP_GATEWAY_URL: http://gateway:8096/github/
-      MCP_GATEWAY_TOKEN: ${MCP_GATEWAY_TOKEN:-}
       # the entrypoint starts this hako-side approval watcher when present
       HAKO_APPROVAL_WATCH: /opt/hako/approvals/watch.sh
     volumes:

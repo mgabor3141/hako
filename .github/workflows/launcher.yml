@@ -5,10 +5,15 @@ name: launcher
 # release tagged with the commit SHA. The ./hako bootstrap pins a specific SHA
 # (launcher/HAKO_VERSION) and verifies the download against launcher/checksums.txt
 # -- commit-hash identity, no semver releases (ADR-0008/0012).
+# Scoped to launcher changes: the repo gets many non-launcher commits (docs,
+# integrations, gateway), and rebuilding identical binaries / spawning a release
+# for each would just clutter Releases.
 on:
   push:
     branches: [main]
+    paths: ["launcher/**", ".github/workflows/launcher.yml"]
   pull_request:
+    paths: ["launcher/**", ".github/workflows/launcher.yml"]
 
 permissions:
   contents: write

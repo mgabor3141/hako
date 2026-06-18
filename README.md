@@ -17,9 +17,9 @@ docker compose exec hako gmux pi      # launch the agent (authenticate it once)
 
 Your pi sessions show up live at <http://localhost:8791>. There's also a host
 launcher — `./hako up`, `./hako shell`, `./hako pi`, … (run `./hako` for the
-list). `./hako` is a bootstrap that builds a small Go binary on first run (needs
-Go for now; prebuilt releases are coming), then assembles your enabled
-integrations and drives the stack.
+list). `./hako` is a bootstrap: with Go it builds a small binary from source, and
+without Go it downloads a pinned, checksum-verified prebuilt -- then it assembles
+your enabled integrations and drives the stack.
 
 **Windows / WSL2:** run from inside your WSL2 distro (Docker Desktop WSL
 integration on) and **clone into the Linux home (`~`), not `/mnt/c/...`** — bind
@@ -156,9 +156,8 @@ that file to your agent.
 - **Phase 2 — governed tools** *(done)*: the MCP gateway, per-call approval (in
   gmux), composable integrations, and the age vault — the agent reaches real
   tools holding no credentials.
-- **Next:** cut the first tagged launcher release, so hosts without Go fetch a
-  pinned, checksummed binary (the pipeline and the verifying bootstrap are in
-  place).
+- **Next:** hardening for real-credential use (see below), broader integrations,
+  and mac/WSL2 verification.
 
 hako is a working prototype, not yet hardened for real-credential use —
 [`docs/production-readiness.md`](docs/production-readiness.md) is the honest list

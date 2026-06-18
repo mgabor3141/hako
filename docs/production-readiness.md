@@ -46,9 +46,11 @@ known rough edges, and one-time steps to close before that.
 
 ## Delivery
 
-- **No tagged release yet.** The no-Go bootstrap path can't fetch a binary until
-  the first `v*` tag is cut and `launcher/HAKO_VERSION` + `launcher/checksums.txt`
-  are committed (see `launcher/README.md`). Until then the bootstrap requires Go.
+- The launcher ships per-commit **hash releases** (CI builds + publishes archives
+  + checksums on every launcher change to `main`); the bootstrap pins a SHA and
+  verifies the download. Bumping the pin is a committed `HAKO_VERSION` +
+  `checksums.txt` diff. mac/WSL2 and arm64 builds are produced but unverified on
+  those hosts.
 - The `configure` TUI's **seal path** uses the standard `tea.ExecProcess` pattern
   but has not been driven through a full interactive session in CI.
 

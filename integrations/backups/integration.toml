@@ -1,0 +1,14 @@
+name    = "backups"
+summary  = "Periodic deduplicated snapshots of the agent home into a repo it can't reach."
+
+# Pure infrastructure: no [skill] (the agent must not see or touch its own
+# backups -- that isolation is the whole point), no gateway, no vault secret
+# (restic's key self-generates in ./backups/, gitignored). An integration that
+# is just a sidecar + a setting.
+
+[settings]
+interval = { type = "number", default = 900, description = "Seconds between snapshots (lower = smaller loss window)." }
+
+# Runs whenever backups is enabled (no enabled_by gate).
+[sidecar]
+compose = "compose.yaml"

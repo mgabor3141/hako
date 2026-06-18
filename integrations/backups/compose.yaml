@@ -1,0 +1,21 @@
+# hako backup sidecar: periodic restic snapshots of the agent home into an
+# isolated repo (./backups) that the main `hako` container never mounts -- so the
+# agent, even with sudo, has no path to wipe its own history. The restic key is
+# generated on first run and lives only in ./backups (gitignored), so hako still
+# ships no secrets. The agent has no backups skill; this is infra it can't reach.
+services:
+  backup:
+    # pinned by digest (ADR-0008); = restic/restic:0.18.1
+    image: restic/restic@sha256:39d9072fb5651c80d75c7a811612eb60b4c06b32ffe87c2e9f3c7222e1797e76
+    container_name: hako-backup
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/backup.sh"]
+    environment:
+      # the `interval` setting (hako.toml / hako configure) flows in here
+      BACKUP_INTERVAL: ${HAKO_BACKUPS_INTERVAL:-900}
+      RESTIC_REPOSITORY: /backups/repo
+      RESTIC_PASSWORD_FILE: /backups/.restic-pass
+    volumes:
+      - ./agent:/src:ro                                 # read-only source
+      - ./backups:/backups                              # isolated repo (hako does not mount this)
+      - ./integrations/backups/backup.sh:/backup.sh:ro

@@ -15,3 +15,6 @@ launcher/hako
 # launcher: pinned-binary download cache + goreleaser output
 .hako/
 dist/
+
+# backups integration: isolated restic repo (must stay unreachable by the agent)
+/backups/

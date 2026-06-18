@@ -13,3 +13,9 @@ enabled = true
 enabled = false
 # sidecar = true                      # run the bundled search sidecar (default)
 # url = "https://searx.example.com"   # use this endpoint instead (set sidecar = false)
+
+# Periodic snapshots of the agent home into a repo it can't reach (restic).
+# Off by default (ADR-0009); the agent gets no skill for this -- it's infra.
+[integrations.backups]
+enabled = false
+# interval = 900                      # seconds between snapshots

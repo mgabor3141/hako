@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -96,11 +97,8 @@ func assemble(cfg *Config) error {
 
 	// 3. settings env for the agent container (+ compose interpolation).
 	var env strings.Builder
-	for _, it := range enabled {
-		nm := envKey(it.Name)
-		for k, v := range it.Values {
-			fmt.Fprintf(&env, "HAKO_%s_%s=%s\n", nm, envKey(k), v)
-		}
+	for _, line := range settingsEnv(cfg) {
+		env.WriteString(line + "\n")
 	}
 	// gateway integrations: wire the agent's route to each (no auth -- the
 	// private network is the boundary). The skill reads <NAME>_MCP_URL.
@@ -119,6 +117,26 @@ func assemble(cfg *Config) error {
 	}
 	fmt.Printf("hako: assembled (enabled: %s)\n", orNone(strings.Join(names, " ")))
 	return nil
+}
+
+// settingsEnv renders enabled integrations' resolved settings as
+// HAKO_<INT>_<SETTING>=value. The agent loads these via .hako.env; the launcher
+// also passes them to `docker compose` so sidecars can interpolate them (e.g.
+// BACKUP_INTERVAL: ${HAKO_BACKUPS_INTERVAL:-900}).
+func settingsEnv(cfg *Config) []string {
+	var out []string
+	for _, it := range cfg.Enabled() {
+		nm := envKey(it.Name)
+		keys := make([]string, 0, len(it.Values))
+		for k := range it.Values {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			out = append(out, fmt.Sprintf("HAKO_%s_%s=%s", nm, envKey(k), it.Values[k]))
+		}
+	}
+	return out
 }
 
 func envKey(s string) string {

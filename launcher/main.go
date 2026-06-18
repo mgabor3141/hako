@@ -46,6 +46,7 @@ func main() {
 	if err != nil {
 		fatal(err.Error())
 	}
+	composeEnv = settingsEnv(cfg) // resolved settings for sidecar interpolation
 	files := composeFiles(cfg)
 
 	switch cmd {
@@ -133,8 +134,17 @@ func findRoot() (string, error) {
 	return "", fmt.Errorf("not inside a hako checkout (no compose.yaml found)")
 }
 
+// composeEnv holds resolved HAKO_<INT>_<SETTING> vars, passed to docker compose
+// so sidecar overlays can interpolate them.
+var composeEnv []string
+
 func dc(files []string, args ...string) {
-	run("docker", append(append([]string{"compose"}, files...), args...)...)
+	c := exec.Command("docker", append(append([]string{"compose"}, files...), args...)...)
+	c.Stdin, c.Stdout, c.Stderr = os.Stdin, os.Stdout, os.Stderr
+	c.Env = append(os.Environ(), composeEnv...)
+	if err := c.Run(); err != nil {
+		os.Exit(exitCode(err))
+	}
 }
 
 func run(name string, args ...string) {

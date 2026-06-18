@@ -101,8 +101,9 @@ sidecar.
 ```
 
 Shipped today: **github** (PRs/issues/CI through the gateway) and **websearch**
-(a bundled search sidecar, or your own endpoint). Add more by dropping a folder
-in `integrations/` — see [`integrations/README.md`](./integrations/README.md).
+(a sidecar + typed-settings demo — its bundled backend is a *mock*; point `url`
+at a real endpoint before relying on it). Add more by dropping a folder in
+`integrations/` — see [`integrations/README.md`](./integrations/README.md).
 
 ## Secrets
 
@@ -158,3 +159,8 @@ that file to your agent.
 - **Next:** cut the first tagged launcher release, so hosts without Go fetch a
   pinned, checksummed binary (the pipeline and the verifying bootstrap are in
   place).
+
+hako is a working prototype, not yet hardened for real-credential use —
+[`docs/production-readiness.md`](docs/production-readiness.md) is the honest list
+of placeholders and rough edges (mock search backend, GitHub-coupled gateway
+overlay, digest pinning, the dev vault's throwaway secret, …).

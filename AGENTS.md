@@ -58,6 +58,11 @@ Load-bearing, reversible choices are recorded as lightweight ADRs in
 mounts the whole home, or holds no credentials. When you make or reverse such a
 choice, add or supersede an ADR — don't bury the rationale in a commit alone.
 
+Known placeholders and rough edges (the mock websearch backend, the
+GitHub-coupled gateway overlay, branch-not-digest gateway pinning, the dev
+vault's throwaway secret) are tracked in
+[`docs/production-readiness.md`](docs/production-readiness.md); keep it honest.
+
 ## The rule that bites
 
 All of `agent/` is bind-mounted over `/home/agent`, so **anything baked into the

@@ -19,6 +19,11 @@ Pin and verify everything, per tier:
 - **Release-age delay**: mise's `minimum_release_age` (default 24h) stays on, so
   a freshly-published version isn't adopted until it has aged enough for a
   compromise to be caught or yanked (it skipped a <24h-old release in practice).
+- **Gateway tier**: the MCP gateway image is **pinned by `@sha256` digest** to a
+  specific fork-commit CI build (`ghcr.io/mgabor3141/mcp-proxy`, published per
+  commit by the fork's `image` workflow). No semver releases -- commit-hash
+  identity, immutable digest. Bumping is a one-line digest diff in
+  `gateway/compose.gateway.yaml`.
 
 Bumps are deliberate, reviewable commits (a hash or lock diff).
 

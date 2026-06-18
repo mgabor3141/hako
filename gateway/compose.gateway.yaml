@@ -4,8 +4,8 @@
 #   docker compose -f compose.yaml -f gateway/compose.gateway.yaml up
 #
 # Paths are relative to the project directory (the base compose.yaml's dir =
-# repo root), not this file's dir. Built from the pinned fork for now; pin to a
-# digest per ADR-0008 before release.
+# repo root), not this file's dir. The gateway image is pinned by digest
+# (ADR-0008) -- see the service below.
 volumes:
   # shared between the gateway (writes requests) and hako (the watcher + the
   # gmux prompt sessions write verdicts). ADR-0010.
@@ -13,9 +13,11 @@ volumes:
 
 services:
   gateway:
-    build:
-      context: https://github.com/mgabor3141/mcp-proxy.git#feat/call-hook
-      dockerfile: Dockerfile.slim
+    # Pinned by digest to a fork commit's CI build (ADR-0008). To bump: push to
+    # the mcp-proxy fork's main; its `image` workflow publishes a new
+    # ghcr.io/...@sha256, then update the digest here (the diff surfaces on
+    # `git pull`). This digest = mgabor3141/mcp-proxy@f1fc314 (Dockerfile.slim).
+    image: ghcr.io/mgabor3141/mcp-proxy@sha256:6463f033119c9a8d018d1dfdcc41d9bd9f679c1280f064669e3ba982a514c1c4
     container_name: hako-gateway
     restart: unless-stopped
     volumes:

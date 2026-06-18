@@ -22,9 +22,9 @@ known rough edges, and one-time steps to close before that.
 
 ## The gateway
 
-- **Pinned to a branch, not a digest.** `gateway/compose.gateway.yaml` builds the
-  fork from `...mcp-proxy.git#feat/call-hook`. Pin by image digest (ADR-0008) and
-  ideally upstream the `callHook` change before release.
+- **`callHook` lives in a fork.** The gateway image is pinned by `@sha256` digest
+  (ADR-0008), built per commit from the `mcp-proxy` fork's `main`. Upstreaming
+  `callHook` would remove the fork dependency, but isn't required.
 - **No agent <-> gateway auth.** The boundary is the private compose network
   (`MCP_GATEWAY_TOKEN` defaults empty). Intentional, but know it: anything in the
   agent container can call the gateway.

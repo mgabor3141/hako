@@ -1,0 +1,51 @@
+name: launcher
+
+# Build CI for the host launcher, on every commit (and PR). On main it also
+# publishes a "hash release": archives + checksums for all platforms under a
+# release tagged with the commit SHA. The ./hako bootstrap pins a specific SHA
+# (launcher/HAKO_VERSION) and verifies the download against launcher/checksums.txt
+# -- commit-hash identity, no semver releases (ADR-0008/0012).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  launcher:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: launcher/go.mod
+          cache-dependency-path: launcher/go.sum
+
+      - name: vet + test
+        working-directory: launcher
+        run: |
+          go vet ./...
+          go test ./...
+
+      - name: build + package all platforms
+        working-directory: launcher
+        run: |
+          mkdir -p dist
+          for p in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
+            os=${p%/*}; arch=${p#*/}
+            CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath \
+              -ldflags "-s -w -X main.version=$GITHUB_SHA" -o hako .
+            tar -czf "dist/hako_${os}_${arch}.tar.gz" hako && rm hako
+          done
+          ( cd dist && sha256sum *.tar.gz > checksums.txt )
+
+      - name: publish hash release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_SHA" launcher/dist/* \
+            --prerelease --title "$GITHUB_SHA" \
+            --notes "Per-commit launcher build. Pin via launcher/HAKO_VERSION + checksums.txt."

@@ -10,11 +10,12 @@
   publishes them. The `hako`->`help` rename is done. The `configure` TUI
   (Phase B) is **built** (bubbletea: toggle integrations, set typed settings,
   seal secrets, writes hako.toml). **Phase C** (release pipeline) is in place:
-  `.goreleaser.yaml` + a tag-triggered CI workflow build pinned, checksummed
-  binaries, and the bootstrap downloads + sha256-verifies them against the
-  committed `launcher/checksums.txt` when Go is absent. The first tagged release
-  (and committing the `HAKO_VERSION` + `checksums.txt` pin) is the remaining
-  one-time step.
+  `.github/workflows/launcher.yml` builds + tests every commit and, on `main`,
+  publishes a **hash release** (archives + checksums under a release tagged with
+  the commit SHA -- commit-hash identity, no semver, matching the gateway's
+  digest model in ADR-0008). When Go is absent the bootstrap downloads the
+  pinned SHA's archive and sha256-verifies it against the committed
+  `launcher/checksums.txt`.
 
 ## Context
 The default secret model needs an interactive unseal, MCP servers need guided

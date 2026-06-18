@@ -24,18 +24,24 @@ an **in-process vault** (`filippo.io/age` + locked memory; a single multi-secret
 `vault/secrets.age` under one global passphrase; the gateway no longer
 decrypts). The shell launcher is retired. **Phase B** is done too: a `configure`
 TUI (bubbletea) toggles integrations, sets typed settings, and seals secrets,
-writing hako.toml. **Phase C** is in place: `.goreleaser.yaml` +
-`.github/workflows/release.yml` build pinned, checksummed binaries on a `v*` tag,
-and the bootstrap downloads + verifies them.
+writing hako.toml. **Phase C** is in place: `.github/workflows/launcher.yml`
+builds + tests on every commit, and on `main` publishes a **hash release**
+(archives + checksums under a release tagged with the commit SHA). The bootstrap
+downloads + verifies that against the committed `launcher/checksums.txt` --
+commit-hash identity, no semver releases.
 
-## Cutting a release
+## Pinning a build
+
+Every push to `main` produces a hash release automatically. To adopt one (the
+same shape as bumping the gateway digest):
 
 ```sh
-git tag v0.1.0 && git push origin v0.1.0   # CI runs goreleaser -> GitHub release
+sha=<commit on main>
+curl -fsSL "https://github.com/mgabor3141/hako/releases/download/$sha/checksums.txt" \
+  > launcher/checksums.txt
+echo "$sha" > launcher/HAKO_VERSION
 ```
 
-Then **pin it** so the bootstrap (and `git pull` users) adopt it: download the
-release's `checksums.txt` to `launcher/checksums.txt` and write the tag to
-`launcher/HAKO_VERSION`, and commit both. Pinning the checksums in-repo (not
-trusting the release blob) is the supply-chain point (ADR-0008): a tampered
-release can't change them without a diff you see on pull.
+Commit both. Pinning the checksums in-repo (not trusting the release blob) is the
+supply-chain point (ADR-0008): a tampered release can't change them without a
+diff you see on `git pull`.

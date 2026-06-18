@@ -31,7 +31,7 @@ while :; do
     [ $((now - mtime)) -gt "$ttl" ] || continue
     id="$(basename "$f" .seen)"
     sid="$(cat "$dir/$id.sid" 2>/dev/null || true)"
-    [ -n "$sid" ] && gmux --kill "$sid" >/dev/null 2>&1 || true
+    if [ -n "$sid" ]; then gmux --kill "$sid" >/dev/null 2>&1 || true; fi
     rm -f "$dir/$id.json" "$dir/$id.seen" "$dir/$id.sid" "$dir/$id.verdict"
   done
 

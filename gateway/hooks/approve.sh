@@ -24,7 +24,8 @@ if [ "$tool" = "merge_pull_request" ]; then
 fi
 
 # shared dir must be writable by the (unprivileged) hako-side watcher too
-mkdir -p "$dir" && chmod 0777 "$dir" 2>/dev/null || true
+mkdir -p "$dir" 2>/dev/null || true
+chmod 0777 "$dir" 2>/dev/null || true
 
 id="${tool}-$(date +%s)-$$"
 # {"server":..,"params":{"name":..,"arguments":..}} written atomically so the

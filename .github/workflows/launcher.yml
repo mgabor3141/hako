@@ -1,0 +1,32 @@
+name: launcher
+
+# Validation only (no release/publish -- the bootstrap builds the launcher from
+# source, ADR-0012). Runs on launcher changes: vet, test, and a cross-compile of
+# every target so mac/WSL/arm users can't be broken by a Linux-only assumption.
+on:
+  push:
+    branches: [main]
+    paths: ["launcher/**", ".github/workflows/launcher.yml"]
+  pull_request:
+    paths: ["launcher/**", ".github/workflows/launcher.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  launcher:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: launcher/go.mod
+          cache-dependency-path: launcher/go.sum
+      - name: vet, test, cross-build
+        working-directory: launcher
+        run: |
+          go vet ./...
+          go test ./...
+          for p in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
+            CGO_ENABLED=0 GOOS="${p%/*}" GOARCH="${p#*/}" go build -o /dev/null .
+          done

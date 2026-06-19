@@ -19,6 +19,16 @@ We looked for ways to keep the rule intact:
 - **SSH deploy keys** are the tightest credential (one repo, transport-only, no
   API), but adding one needs repo *admin*, so they do not work for repos you
   only have write on.
+- **Agent self-provisioning via a gated MCP tool.** Tempting, and the per-repo
+  grant *is* a genuine, deny-able authorization decision worth having. But
+  minting a *persistent* credential has exactly one mechanism -- a deploy key via
+  `POST /repos/{owner}/{repo}/keys` -- which needs an **Administration**-scoped
+  token in the gateway. PATs cannot be API-minted at all, and GitHub App
+  installation tokens are ephemeral (1h), not the lasting grant we want. An
+  Administration token in the gateway is a far worse thing to leak than a
+  Contents credential held by the agent (see the `/proc`-readable-token gap in
+  production-readiness.md), so auto-provisioning is rejected. Granting push
+  access stays a human action: the agent asks, the human sets up the credential.
 
 ## Decision
 Pushing is the one bounded exception to ADR-0002. The agent may hold a

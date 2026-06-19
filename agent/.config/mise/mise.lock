@@ -375,6 +375,10 @@ url = "https://nodejs.org/dist/v22.22.3/node-v22.22.3-win-x64.zip"
 version = "0.79.4"
 backend = "npm:@earendil-works/pi-coding-agent"
 
+[[tools."npm:pi-acp"]]
+version = "0.0.31"
+backend = "npm:pi-acp"
+
 [[tools.python]]
 version = "3.12.13"
 backend = "core:python"

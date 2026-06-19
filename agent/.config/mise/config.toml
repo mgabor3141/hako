@@ -37,6 +37,15 @@ f="$(readlink -f "$MISE_TOOL_INSTALL_PATH/bin/pi")"
 sed -i '1s|.*|#!/usr/bin/env bun|' "$f"
 '''
 
+# pi-acp: the ACP (Agent Client Protocol) adapter. Lets an external editor (e.g.
+# Zed) drive the sandboxed pi over `docker exec -i hako pi-acp` -- pi-acp speaks
+# ACP/stdio to the editor and spawns `pi --mode rpc` in here. Runs under node
+# (its shipped shebang), so no shebang flip. Off the hot path: only spawned when
+# an editor connects. See docs/acp.md. Bump like pi: `mise use -g npm:pi-acp@<v>`.
+[tools."npm:pi-acp"]
+version = "latest"
+depends = ["node"]
+
 [settings]
 # Record exact versions + checksums in mise.lock and install --locked.
 lockfile = true

@@ -150,6 +150,13 @@ Off by default. To snapshot the agent home to a repo the agent can't reach,
 follow [`docs/backups.md`](./docs/backups.md) (a restic sidecar) — or just hand
 that file to your agent.
 
+## Drive it from your editor (ACP)
+
+An editor that speaks the [Agent Client Protocol](https://agentclientprotocol.com)
+(e.g. Zed) can drive the **sandboxed** pi over `docker exec -i hako pi-acp` — you
+get the editor's chat/diff UI while the agent stays in the container (zero
+credentials, gateway + approval gate intact). See [`docs/acp.md`](./docs/acp.md).
+
 ## Roadmap
 
 - **Phase 1 — pi + container + gmux** *(done)*: clone-and-up opinionated pi.

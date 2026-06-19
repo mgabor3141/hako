@@ -68,6 +68,8 @@ type sealDoneMsg struct {
 	err  error
 }
 
+type shellDoneMsg struct{ err error }
+
 func newCfgModel(cfg *Config) *cfgModel {
 	ti := textinput.New()
 	ti.CharLimit = 512
@@ -108,6 +110,13 @@ func (m *cfgModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.status = onStyle.Render("sealed a secret for " + msg.name)
 		}
 		return m, nil
+	case shellDoneMsg:
+		if msg.err != nil {
+			m.status = warnStyle.Render("shell exited with an error -- is the stack up? (hako up)")
+		} else {
+			m.status = ""
+		}
+		return m, nil
 	case tea.KeyMsg:
 		if m.editing {
 			return m.updateEditing(msg)
@@ -137,6 +146,8 @@ func (m *cfgModel) updateNav(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if it := m.rows[m.cursor].it; len(it.Secrets) > 0 {
 			return m, m.seal(it.Name)
 		}
+	case "!":
+		return m, m.shell()
 	case "w":
 		if err := writeHako(m.cfg); err != nil {
 			m.status = warnStyle.Render("save failed: " + err.Error())
@@ -216,6 +227,14 @@ func (m *cfgModel) updateEditing(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// shell drops the user into the agent container's zsh, then returns to the TUI
+// (tea.ExecProcess releases the terminal for the duration). Same invocation as
+// the `hako shell` verb (shellArgs).
+func (m *cfgModel) shell() tea.Cmd {
+	c := exec.Command("docker", shellArgs()...)
+	return tea.ExecProcess(c, func(err error) tea.Msg { return shellDoneMsg{err} })
+}
+
 // seal hands the terminal to `hako seal <name>` (the masked-prompt flow).
 func (m *cfgModel) seal(name string) tea.Cmd {
 	self, err := os.Executable()
@@ -274,7 +293,7 @@ func (m *cfgModel) View() string {
 	}
 
 	b.WriteByte('\n')
-	help := "↑/↓ move · space toggle · enter expand/edit · s seal · w save · q quit"
+	help := "↑/↓ move · space toggle · enter expand/edit · s seal · ! shell · w save · q quit"
 	if m.dirty {
 		help = warnStyle.Render("● unsaved") + " · " + help
 	}

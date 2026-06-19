@@ -21,6 +21,14 @@ import (
 
 const gmuxURL = "http://localhost:8791/"
 
+// agentContainer is the compose service/container name the human attaches to.
+const agentContainer = "hako"
+
+// shellArgs is the `docker exec` invocation that drops the human into the agent
+// container's interactive zsh (pi runs bash; humans get zsh -- ADR-0005). Shared
+// by the `shell` verb and the configure TUI so the two can't drift.
+func shellArgs() []string { return []string{"exec", "-it", agentContainer, "zsh"} }
+
 // version is set by the release build (-X main.version); "dev" for source builds.
 var version = "dev"
 
@@ -77,9 +85,9 @@ func main() {
 	case "logs":
 		dc(files, append([]string{"logs", "-f"}, args...)...)
 	case "shell":
-		run("docker", "exec", "-it", "hako", "zsh")
+		run("docker", shellArgs()...)
 	case "pi":
-		run("docker", "exec", "-it", "hako", "gmux", "pi")
+		run("docker", "exec", "-it", agentContainer, "gmux", "pi")
 	case "auth":
 		dc(files, "exec", "hako", "gmuxd", "auth")
 	case "open":

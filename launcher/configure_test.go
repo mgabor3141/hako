@@ -75,6 +75,17 @@ func TestConfigureModelAndSave(t *testing.T) {
 	}
 }
 
+// The `!` key drops to a container shell: it must yield a command (the
+// tea.ExecProcess), not be swallowed. We assert wiring without executing it
+// (executing would spawn docker).
+func TestConfigureShellKey(t *testing.T) {
+	var m tea.Model = newCfgModel(fakeCfg(t.TempDir()))
+	_, cmd := m.Update(key("!"))
+	if cmd == nil {
+		t.Fatal(`"!" should return a shell command, got nil`)
+	}
+}
+
 func TestWriteHakoOmitsDefaults(t *testing.T) {
 	dir := t.TempDir()
 	cfg := fakeCfg(dir) // websearch settings all at default

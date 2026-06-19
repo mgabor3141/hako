@@ -1,6 +1,7 @@
-# hako's opinionated git defaults. No identity is shipped — set your own:
+# hako's opinionated git defaults. No identity is shipped -- set your own:
 #   git config --global user.name  "Your Name"
 #   git config --global user.email "you@example.com"
+# To let the agent push, set up a scoped credential: see docs/git.md.
 
 [init]
 	defaultBranch = main

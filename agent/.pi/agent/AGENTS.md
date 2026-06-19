@@ -30,6 +30,10 @@ Text you post for others to read later (PR descriptions, reviews, commit message
 
 Don't restate what the reader can already see: the code, the types, the tests, the diff. Capture the *why*, especially why not the obvious alternative, not the *what* that's already there. Prefer a link to the exact line, ticket, comment, or PR over restating it. Fold genuinely optional depth (full payloads, long enumerations, edge cases) into a `<details>` block, but collapsing is not a substitute for cutting.
 
+## Git Pushing (hako)
+
+You run git in real checkouts. Cloning and reading need nothing. Pushing needs a credential your human sets up once (the one credential you are trusted to hold); it persists in the home. If `git push` fails with an auth error, do not retry variations or try to obtain a token yourself: stop and tell your human which `owner/repo` you need push access to, and point them at `docs/git.md`. Opening or merging PRs goes through the `github` tool (approval-gated), not git.
+
 ## Tool Gotchas
 
 The `Edit` and `Write` tools take `newText` as a JSON string. JSON escapes are decoded before the bytes hit disk: `\\` becomes a single `\`, `\n` becomes a real newline, `\t` a tab. To write a literal single backslash (bash line-continuation `\`, regex escape `\.`, Windows path), put `\\` in `newText`. To write two literal backslashes, put `\\\\`. When unsure, sanity-check with `cat -A` after the edit; backslash-significant content in shell, regex, and config files is the most common place to get this wrong silently.

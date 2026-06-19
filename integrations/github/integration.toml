@@ -17,9 +17,10 @@ Set up a GitHub token so the agent can work with PRs, issues, and CI.
        Issues           Read and write   comment on issues (and PR conversations)
        Contents         Read and write   read code; create the branch/commits a PR needs
        Actions          Read and write   read CI runs (Read-only if you won't re-run CI)
-       Commit statuses  Read             CI status on commits
-       Checks           Read             CI check runs
+       Commit statuses  Read             CI status on commits / PRs
        Metadata         Read             auto-selected, required
+     (There is no "Checks" permission for fine-grained tokens -- that's GitHub
+     Apps only; CI status comes through Actions + Commit statuses.)
      For a look-but-don't-touch token, set every one to Read.
 4. Generate, copy the token (starts with `github_pat_`), and paste it below.
 """

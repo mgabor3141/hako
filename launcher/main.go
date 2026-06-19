@@ -193,12 +193,51 @@ func readSecret(prompt string) string {
 	fmt.Fprint(os.Stderr, prompt)
 	fd := int(os.Stdin.Fd())
 	if term.IsTerminal(fd) {
-		b, _ := term.ReadPassword(fd)
+		s := readMasked(fd)
 		fmt.Fprintln(os.Stderr)
-		return string(b)
+		return s
 	}
 	line, _ := stdinBuf.ReadString('\n')
 	return strings.TrimRight(line, "\r\n")
+}
+
+// readMasked reads a secret from the terminal in raw mode, echoing a '•' per
+// character so the user sees their typing land without revealing it. Handles
+// backspace and ctrl-c; falls back to a no-echo read if raw mode is unavailable.
+func readMasked(fd int) string {
+	old, err := term.MakeRaw(fd)
+	if err != nil {
+		b, _ := term.ReadPassword(fd)
+		return string(b)
+	}
+	defer term.Restore(fd, old)
+	var buf []byte
+	b := make([]byte, 1)
+	for {
+		n, err := os.Stdin.Read(b)
+		if n == 0 || err != nil {
+			break
+		}
+		switch c := b[0]; c {
+		case '\r', '\n':
+			return string(buf)
+		case 3: // ctrl-c
+			term.Restore(fd, old)
+			fmt.Fprintln(os.Stderr)
+			os.Exit(130)
+		case 8, 127: // backspace / delete
+			if len(buf) > 0 {
+				buf = buf[:len(buf)-1]
+				fmt.Fprint(os.Stderr, "\b \b")
+			}
+		default:
+			if c >= 0x20 { // skip other control bytes
+				buf = append(buf, c)
+				fmt.Fprint(os.Stderr, "\u2022")
+			}
+		}
+	}
+	return string(buf)
 }
 
 func usage(cfg *Config) {

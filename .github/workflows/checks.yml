@@ -4,9 +4,8 @@ name: checks
 #   - shellcheck the load-bearing shell (the approval gate, sealed boot, the
 #     bootstrap, ...);
 #   - run the skill contract tests (hermetic, no credentials);
-#   - secret-scan the working tree -- "ships no secrets" is a core invariant
-#     (ADR-0002). Scans the current files, not history (the throwaway tracer PAT
-#     in old commits is known and slated for revocation).
+#   - secret-scan the full git history -- "ships no secrets" is a core invariant
+#     (ADR-0002).
 on:
   push:
     branches: [main]
@@ -42,9 +41,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: gitleaks (working tree)
+        with:
+          fetch-depth: 0   # full history for the git-mode scan
+      - name: gitleaks (full history)
         run: |
           v=8.30.1
           curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${v}/gitleaks_${v}_linux_x64.tar.gz" \
             | tar -xz gitleaks
-          ./gitleaks detect --no-git --source . --redact
+          ./gitleaks detect --redact

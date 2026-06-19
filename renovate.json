@@ -1,0 +1,16 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":dependencyDashboard"],
+  "enabledManagers": ["dockerfile", "docker-compose"],
+  "pinDigests": true,
+  "schedule": ["before 6am on monday"],
+  "timezone": "Europe/Budapest",
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "description": "The gateway is our own mcp-proxy fork, pinned to a commit-build digest by hand (ADR-0008: commit-hash identity, no semver). Renovate must not touch it.",
+      "matchPackageNames": ["ghcr.io/mgabor3141/mcp-proxy"],
+      "enabled": false
+    }
+  ]
+}

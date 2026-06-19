@@ -23,9 +23,21 @@ Pin and verify everything, per tier:
   specific fork-commit CI build (`ghcr.io/mgabor3141/mcp-proxy`, published per
   commit by the fork's `image` workflow). No semver releases -- commit-hash
   identity, immutable digest. Bumping is a one-line digest diff in
-  `gateway/compose.gateway.yaml`.
+  `gateway/compose.gateway.yaml`. It holds credentials, so integrity here is the
+  whole point; bumps stay manual (Renovate is told to ignore it).
+- **Sidecar tier**: third-party service images (SearXNG, crawl4ai, restic) are
+  pinned as **`tag@digest`** -- a readable version *and* immutable bytes. They
+  hold no credentials, so the repush-integrity argument is weaker, but staleness
+  is a real cost: crawl4ai is a headless Chromium fetching arbitrary pages, so
+  CVE freshness matters more than reproducibility. A bare opaque digest with no
+  way to bump it is the worst case (stale *and* unclear). So **Renovate**
+  (`renovate.json`, docker managers) raises a scheduled PR to bump tag+digest --
+  supplying the cadence this ADR requires while keeping each change an auditable
+  diff. (Renovate is the missing half of the pin: a freeze is only worth its
+  clarity cost when something deliberately re-makes the decision on a cadence.)
 
-Bumps are deliberate, reviewable commits (a hash or lock diff).
+Bumps are deliberate, reviewable commits (a hash or lock diff) -- by hand for the
+credential-holding tiers, via Renovate PRs for the credential-less sidecars.
 
 ## Why
 Version strings are not integrity; checksums are. A real lockfile also pins the

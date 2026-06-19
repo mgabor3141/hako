@@ -5,8 +5,9 @@
 # `sidecar` setting is true (integration.toml: [sidecar].enabled_by = "sidecar").
 services:
   websearch:
-    # pinned by digest (ADR-0008); = searxng/searxng:latest
-    image: searxng/searxng@sha256:ed29454ec1f7149986d42819b8b75265e545e79dd9187ba241c09f16a0fe56d0
+    # tag + digest: readable channel, immutable bytes (ADR-0008). Renovate
+    # keeps the digest fresh -- matters here, searxng tracks a moving `latest`.
+    image: searxng/searxng:latest@sha256:ed29454ec1f7149986d42819b8b75265e545e79dd9187ba241c09f16a0fe56d0
     container_name: hako-websearch
     restart: unless-stopped
     volumes:

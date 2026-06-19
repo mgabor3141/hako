@@ -5,8 +5,8 @@
 # ships no secrets. The agent has no backups skill; this is infra it can't reach.
 services:
   backup:
-    # pinned by digest (ADR-0008); = restic/restic:0.18.1
-    image: restic/restic@sha256:39d9072fb5651c80d75c7a811612eb60b4c06b32ffe87c2e9f3c7222e1797e76
+    # tag + digest: readable version, immutable bytes (ADR-0008); Renovate bumps both.
+    image: restic/restic:0.18.1@sha256:39d9072fb5651c80d75c7a811612eb60b4c06b32ffe87c2e9f3c7222e1797e76
     container_name: hako-backup
     restart: unless-stopped
     entrypoint: ["/bin/sh", "/backup.sh"]

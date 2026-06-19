@@ -4,8 +4,9 @@
 # is true (integration.toml: [sidecar].enabled_by = "sidecar").
 services:
   webview:
-    # pinned by digest (ADR-0008); = unclecode/crawl4ai:0.8.6
-    image: unclecode/crawl4ai@sha256:a45fd08f8f15f67026c1bff0a151f0479244caf6751a0c6943b3870efafcd025
+    # tag + digest: readable version, immutable bytes (ADR-0008). Renovate bumps
+    # both -- crawl4ai is a headless Chromium, so CVE freshness matters.
+    image: unclecode/crawl4ai:0.8.6@sha256:a45fd08f8f15f67026c1bff0a151f0479244caf6751a0c6943b3870efafcd025
     container_name: hako-webview
     restart: unless-stopped
     # Chromium crashes on image-heavy pages without more shared memory.

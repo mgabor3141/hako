@@ -1,0 +1,21 @@
+# SearXNG config for hako's bundled search sidecar.
+#
+# This instance is reachable ONLY on hako's private docker network (never
+# published), so the bot-limiter is off -- which drops the valkey/redis
+# dependency the public searxng-docker compose needs. We also enable JSON
+# output (off upstream by default) so the `websearch` skill can parse results.
+use_default_settings: true
+
+server:
+  # Not a credential: this is a single-tenant, unpublished instance, so the key
+  # only signs local session/CSRF state. No real secret is committed (ADR-0002);
+  # this is a fixed non-secret constant for an internal-only service.
+  secret_key: "hako-internal-searxng"
+  limiter: false
+  public_instance: false
+
+search:
+  # Upstream ships JSON disabled; the skill needs it.
+  formats:
+    - html
+    - json

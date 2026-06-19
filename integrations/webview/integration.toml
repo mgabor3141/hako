@@ -1,0 +1,19 @@
+name    = "webview"
+summary  = "Read a web page's main content as markdown, via a crawl4ai sidecar."
+
+# Skill only -- no gateway backend, no secret. The agent calls the sidecar
+# directly (fetching a public page is an unauthenticated read).
+[skill]
+dir      = "skill"
+commands = ["webview"]
+
+# Typed settings the user sets in hako.toml (string / number / bool).
+[settings]
+sidecar = { type = "bool",   default = true, description = "Run the bundled crawl4ai sidecar." }
+url     = { type = "string", default = "http://webview:11235", description = "crawl4ai endpoint (set this when sidecar = false)." }
+
+# Sidecar container, included only when the `sidecar` setting is true. Heavy
+# (headless Chromium), so this integration is opt-in (enabled = false default).
+[sidecar]
+compose    = "compose.yaml"
+enabled_by = "sidecar"

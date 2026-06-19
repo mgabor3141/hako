@@ -8,11 +8,18 @@
 [integrations.github]
 enabled = true
 
-# Web search via a bundled sidecar (or your own endpoint).
+# Web search via a bundled SearXNG sidecar (or your own endpoint).
 [integrations.websearch]
 enabled = false
-# sidecar = true                      # run the bundled search sidecar (default)
+# sidecar = true                      # run the bundled SearXNG sidecar (default)
 # url = "https://searx.example.com"   # use this endpoint instead (set sidecar = false)
+
+# Read a page's main content as markdown, via a bundled crawl4ai sidecar.
+# Off by default: crawl4ai is a heavy (headless Chromium) image.
+[integrations.webview]
+enabled = false
+# sidecar = true                      # run the bundled crawl4ai sidecar (default)
+# url = "https://crawl.example.com"   # use this endpoint instead (set sidecar = false)
 
 # Periodic snapshots of the agent home into a repo it can't reach (restic).
 # Off by default (ADR-0009); the agent gets no skill for this -- it's infra.

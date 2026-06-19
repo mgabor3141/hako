@@ -16,8 +16,9 @@ websearch "site:docs.docker.com compose env_file required"
 ```
 
 Notes:
-- One query per call; refine and re-run rather than paging.
-- It hits whatever endpoint hako wired (a bundled sidecar by default, or a
-  configured `url`). It holds no credentials.
-- For reading a specific page's contents, fetch/clone it directly rather than
-  searching for it.
+- One query per call; refine and re-run rather than paging. Returns up to 8
+  results, snippets capped short -- enough to decide what to open.
+- It hits whatever endpoint hako wired (a bundled SearXNG sidecar by default,
+  or a configured `url`). It holds no credentials.
+- To read a specific page's contents, use the `webview` skill (if enabled) or
+  fetch/clone it directly -- don't search for a URL you already have.

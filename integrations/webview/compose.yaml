@@ -1,0 +1,18 @@
+# Bundled webview sidecar: crawl4ai (headless Chromium + main-content markdown
+# extraction), reachable on hako's private network as `webview:11235`. The
+# skill POSTs to /crawl. Included only when the integration's `sidecar` setting
+# is true (integration.toml: [sidecar].enabled_by = "sidecar").
+services:
+  webview:
+    # pinned by digest (ADR-0008); = unclecode/crawl4ai:0.8.6
+    image: unclecode/crawl4ai@sha256:a45fd08f8f15f67026c1bff0a151f0479244caf6751a0c6943b3870efafcd025
+    container_name: hako-webview
+    restart: unless-stopped
+    # Chromium crashes on image-heavy pages without more shared memory.
+    shm_size: 1g
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:11235/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

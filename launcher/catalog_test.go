@@ -11,7 +11,7 @@ func TestRealCatalogParses(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadConfig on the real catalog: %v", err)
 	}
-	for _, name := range []string{"github", "websearch", "backups"} {
+	for _, name := range []string{"github", "websearch", "webview", "backups"} {
 		if cfg.find(name) == nil {
 			t.Errorf("catalog is missing integration %q", name)
 		}

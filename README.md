@@ -100,10 +100,11 @@ sidecar.
 ./hako up              # assembles only the enabled integrations
 ```
 
-Shipped today: **github** (PRs/issues/CI through the gateway) and **websearch**
-(a sidecar + typed-settings demo — its bundled backend is a *mock*; point `url`
-at a real endpoint before relying on it). Add more by dropping a folder in
-`integrations/` — see [`integrations/README.md`](./integrations/README.md).
+Shipped today: **github** (PRs/issues/CI through the gateway), **websearch** (a
+bundled SearXNG sidecar), and **webview** (read a page's main content as
+markdown via a crawl4ai sidecar; off by default -- heavy image). Add more by
+dropping a folder in `integrations/` — see
+[`integrations/README.md`](./integrations/README.md).
 
 ## Secrets
 

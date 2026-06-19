@@ -17,7 +17,17 @@ command -v mise >/dev/null 2>&1 || return 0
 
 _mise_hook() {
     local previous_exit_status=$?
+    # Reentrancy guard. `mise hook-env` can shell out to tools whose mise shims
+    # are bash scripts -- each re-sources this file via BASH_ENV and would call
+    # the hook again. When a tool needs resolving (e.g. an unpinned `latest`,
+    # which runs `npm view`) that recursion becomes an unbounded fork storm. The
+    # exported marker is inherited by those children, so the nested hook no-ops.
+    if [ -n "${_HAKO_MISE_HOOK:-}" ]; then
+        return $previous_exit_status
+    fi
+    export _HAKO_MISE_HOOK=1
     eval "$(mise hook-env -s bash 2>/dev/null)"
+    unset _HAKO_MISE_HOOK
     return $previous_exit_status
 }
 

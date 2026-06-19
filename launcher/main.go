@@ -204,6 +204,9 @@ func readSecret(prompt string) string {
 func usage(cfg *Config) {
 	fmt.Print(`hako -- launcher for the agent stack
 
+  new here? run 'hako configure' for an interactive menu
+  (toggle integrations, set options, seal secrets, drop to a shell)
+
 usage: hako <command> [args]
 
   up [--build]    assemble + start (detached); unseals the vault if present

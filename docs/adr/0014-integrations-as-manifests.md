@@ -74,7 +74,7 @@ not a pi extension; pi stays oblivious.
 - The **assembler + `hako configure` TUI** (config merge, compose selection,
   masked secret prompts, vault wiring) is the feature that justifies the Go
   launcher (ADR-0012); it subsumes the clean secret-handling case. The Go
-  launcher provides `configure`/`up`/`seal`/`unlock`/assemble; the earlier shell
+  launcher provides `configure`/`up`/`auth`/`unlock`/assemble; the earlier shell
   `./hako` is retired.
 - **In-repo catalog only** for now: no third-party or user-dropped integrations,
   which defers a provenance/trust question.

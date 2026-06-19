@@ -8,7 +8,7 @@ known rough edges, and one-time steps to close before that.
 
 ## Before you trust it with real credentials
 
-- **Seal real secrets under a strong passphrase.** `hako seal github` with your
+- **Set up real credentials under a strong passphrase.** `hako auth github` with your
   own token and a real passphrase. (Development used a throwaway, read-only token
   under a throwaway passphrase, both since retired/revoked.)
 - **The secret reaches mcp-proxy as a process env var.** `hako unlock` decrypts

@@ -18,3 +18,6 @@ dist/
 
 # backups integration: isolated restic repo (must stay unreachable by the agent)
 /backups/
+
+# compiled launcher binary from a bare `go build ./...` in launcher/
+/launcher/launcher

@@ -83,7 +83,7 @@ hako leans on a few well-chosen tools so it stays small and legible:
   session in the gmux dashboard). The agent's CLI **adapters** come from the
   `integrations/` catalog and never see the keys.
 - **hako (the launcher)** — `./hako` bootstraps a small Go binary that assembles
-  your enabled integrations, wraps `docker compose`, and unseals the vault. Plain
+  your enabled integrations, wraps `docker compose`, and unlocks the vault. Plain
   `docker compose` still works for the basics.
 
 ## Integrations
@@ -96,7 +96,7 @@ are invisible to the agent — no skill in its context, no gateway route, no
 sidecar.
 
 ```sh
-./hako configure       # a TUI to toggle integrations, set options, seal secrets
+./hako configure       # a TUI to toggle integrations, set options, set up auth
 ./hako up              # assembles only the enabled integrations
 ```
 
@@ -114,10 +114,13 @@ decrypted on your host at unlock time and handed straight to the gateway, never
 written to disk.
 
 ```sh
-./hako seal github     # paste a token; set the vault passphrase
-./hako up              # prompts for the passphrase and unseals
-./hako unlock          # re-enter it after a gateway restart (which re-seals)
+./hako auth github     # set up a token (guided); pick a passphrase to protect it
+./hako up              # prompts for the passphrase and unlocks
+./hako unlock          # re-enter it after a gateway restart (which re-locks)
 ```
+
+`hako auth <integration>` walks you through what credential to create and which
+scopes to grant (e.g. GitHub fine-grained token permissions).
 
 ## Handy in the shell
 

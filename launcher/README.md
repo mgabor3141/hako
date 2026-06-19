@@ -19,13 +19,13 @@ cd launcher && go build -o hako .
 It reads the integration catalog (`integrations/*/integration.toml`) and the
 user's `hako.toml`, **assembles** the stack (links enabled skills, merges the
 gateway config, resolves settings into `.hako.env`, selects sidecars), and wraps
-`docker compose` plus the vault seal/unseal.
+`docker compose` plus credential setup (`auth`) and vault unlock.
 
 Status: **Phase A + A2 done** -- manifest-driven assembly, compose wrapping, and
 an **in-process vault** (`filippo.io/age` + locked memory; a single multi-secret
 `vault/secrets.age` under one global passphrase; the gateway no longer
 decrypts). The shell launcher is retired. **Phase B** is done too: a `configure`
-TUI (bubbletea) toggles integrations, sets typed settings, and seals secrets,
+TUI (bubbletea) toggles integrations, sets typed settings, and sets up auth,
 writing hako.toml. **Delivery** is build-from-source (host Go, else the pinned
 container), cached by source hash -- no release pipeline, no downloaded binary,
 so no skew between the binary and the source you pulled.

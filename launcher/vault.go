@@ -83,15 +83,20 @@ func parseEnv(b []byte) map[string]string {
 	return m
 }
 
-// seal collects an integration's declared secrets, merges them into the single
-// vault under the global passphrase, and re-encrypts.
-func seal(cfg *Config, name string) {
+// setupAuth collects an integration's declared secrets (a token, etc.), merges
+// them into the single vault under the global passphrase, and re-encrypts.
+// Backs the `hako auth <name>` command.
+func setupAuth(cfg *Config, name string) {
 	it := cfg.find(name)
 	if it == nil {
 		fatal("unknown integration: " + name)
 	}
 	if len(it.Secrets) == 0 {
-		fatal(name + " declares no secrets")
+		fatal(name + " needs no credentials")
+	}
+	if g := strings.TrimSpace(it.AuthGuide); g != "" {
+		fmt.Fprintln(os.Stderr, g)
+		fmt.Fprintln(os.Stderr)
 	}
 	add := map[string]string{}
 	for _, s := range it.Secrets {
@@ -131,16 +136,16 @@ func seal(cfg *Config, name string) {
 		secrets[k] = v
 	}
 	if err := encryptVault(cfg, pass, secrets); err != nil {
-		fatal("seal failed: " + err.Error())
+		fatal("saving credentials failed: " + err.Error())
 	}
-	fmt.Printf("hako: sealed %d secret(s) for %q into vault/secrets.age\n", len(add), name)
+	fmt.Printf("hako: saved credentials for %q (%d value(s)) to the vault.\n", name, len(add))
 }
 
 // unlock decrypts the vault on the host and pipes the env into the gateway's
 // tmpfs; boot.sh sources it and starts mcp-proxy.
 func unlock(cfg *Config) {
 	if !isFile(vaultPath(cfg)) {
-		fatal("no vault at vault/secrets.age (run: hako seal <integration>)")
+		fatal("no credentials yet (run: hako auth <integration>)")
 	}
 	pass := readSecret("hako: vault passphrase: ")
 	buf, err := decryptVault(cfg, pass)
@@ -165,7 +170,7 @@ func unlock(cfg *Config) {
 	if err := c.Run(); err != nil {
 		fatal("unlock: could not deliver secrets to the gateway: " + err.Error())
 	}
-	fmt.Println("hako: unsealed.")
+	fmt.Println("hako: credentials unlocked.")
 }
 
 // renderEnv turns secrets into shell-sourceable `export KEY='value'` lines,

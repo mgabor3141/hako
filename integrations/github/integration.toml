@@ -1,6 +1,29 @@
 name    = "github"
 summary  = "GitHub PRs, issues, and CI via the `github` CLI (reads + gated writes)."
 
+# Shown by `hako auth github` before it prompts for the token.
+auth_guide = """
+Set up a GitHub token so the agent can work with PRs, issues, and CI.
+
+1. Open the fine-grained token page:
+     https://github.com/settings/personal-access-tokens/new
+2. Token name + expiration as you like. Under "Repository access" choose
+     "Only select repositories" and pick the repos the agent may touch.
+     (Avoid "All repositories".)
+3. Under "Repository permissions", grant (Read for look-only; Read and write
+     to let the agent act -- every write is still approved by you in the gmux
+     UI before it happens):
+       Pull requests    Read and write   open / update / merge / review / comment
+       Issues           Read and write   comment on issues (and PR conversations)
+       Contents         Read and write   read code; create the branch/commits a PR needs
+       Actions          Read and write   read CI runs (Read-only if you won't re-run CI)
+       Commit statuses  Read             CI status on commits
+       Checks           Read             CI check runs
+       Metadata         Read             auto-selected, required
+     For a look-but-don't-touch token, set every one to Read.
+4. Generate, copy the token (starts with `github_pat_`), and paste it below.
+"""
+
 # A skill (CLI adapter) linked into pi's skill dir when enabled.
 [skill]
 dir      = "skill"
@@ -13,4 +36,4 @@ config = "gateway.json"
 # Secrets this integration needs (sealed into the single global vault).
 [[secrets]]
 env    = "GITHUB_MCP_TOKEN"
-prompt = "GitHub fine-grained PAT (read-only is plenty)"
+prompt = "Paste your GitHub fine-grained token"

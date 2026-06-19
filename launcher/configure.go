@@ -15,7 +15,8 @@ import (
 )
 
 // `hako configure` -- a small TUI to enable/disable integrations, set their
-// typed settings, and seal secrets, so the user never hand-edits hako.toml.
+// typed settings, and set up auth (credentials), so the user never hand-edits
+// hako.toml.
 // On save it writes hako.toml (the enabled set + non-default settings).
 
 func runConfigure(cfg *Config) {
@@ -63,7 +64,7 @@ type cfgModel struct {
 	status   string
 }
 
-type sealDoneMsg struct {
+type authDoneMsg struct {
 	name string
 	err  error
 }
@@ -103,11 +104,11 @@ func (m *cfgModel) Init() tea.Cmd { return nil }
 
 func (m *cfgModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case sealDoneMsg:
+	case authDoneMsg:
 		if msg.err != nil {
-			m.status = warnStyle.Render("seal " + msg.name + " failed or cancelled")
+			m.status = warnStyle.Render("setting up " + msg.name + " auth failed or was cancelled")
 		} else {
-			m.status = onStyle.Render("sealed a secret for " + msg.name)
+			m.status = onStyle.Render("saved credentials for " + msg.name)
 		}
 		return m, nil
 	case shellDoneMsg:
@@ -142,9 +143,9 @@ func (m *cfgModel) updateNav(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.toggle()
 	case "enter":
 		return m.activate()
-	case "s":
+	case "a":
 		if it := m.rows[m.cursor].it; len(it.Secrets) > 0 {
-			return m, m.seal(it.Name)
+			return m, m.setupAuth(it.Name)
 		}
 	case "!":
 		return m, m.shell()
@@ -178,7 +179,7 @@ func (m *cfgModel) toggle() {
 	}
 }
 
-// activate expands an integration, edits a setting, or seals a secret.
+// activate expands an integration, edits a setting, or sets up auth.
 func (m *cfgModel) activate() (tea.Model, tea.Cmd) {
 	r := m.rows[m.cursor]
 	switch r.kind {
@@ -197,7 +198,7 @@ func (m *cfgModel) activate() (tea.Model, tea.Cmd) {
 		m.input.Focus()
 		return m, textinput.Blink
 	case rowSecret:
-		return m, m.seal(r.it.Name)
+		return m, m.setupAuth(r.it.Name)
 	}
 	return m, nil
 }
@@ -235,20 +236,20 @@ func (m *cfgModel) shell() tea.Cmd {
 	return tea.ExecProcess(c, func(err error) tea.Msg { return shellDoneMsg{err} })
 }
 
-// seal hands the terminal to `hako seal <name>` (the masked-prompt flow).
-func (m *cfgModel) seal(name string) tea.Cmd {
+// setupAuth hands the terminal to `hako auth <name>` (the masked-prompt flow).
+func (m *cfgModel) setupAuth(name string) tea.Cmd {
 	self, err := os.Executable()
 	if err != nil {
-		return func() tea.Msg { return sealDoneMsg{name, err} }
+		return func() tea.Msg { return authDoneMsg{name, err} }
 	}
-	c := exec.Command(self, "seal", name)
-	return tea.ExecProcess(c, func(err error) tea.Msg { return sealDoneMsg{name, err} })
+	c := exec.Command(self, "auth", name)
+	return tea.ExecProcess(c, func(err error) tea.Msg { return authDoneMsg{name, err} })
 }
 
 func (m *cfgModel) View() string {
 	var b strings.Builder
 	fmt.Fprintln(&b, titleStyle.Render("hako configure"))
-	fmt.Fprintln(&b, dimStyle.Render("enable integrations, set their options, seal secrets"))
+	fmt.Fprintln(&b, dimStyle.Render("enable integrations, set their options, set up auth"))
 	b.WriteByte('\n')
 
 	for i, r := range m.rows {
@@ -287,13 +288,13 @@ func (m *cfgModel) View() string {
 			for j, s := range r.it.Secrets {
 				envs[j] = s.Env
 			}
-			fmt.Fprintf(&b, "%s      %s %s\n", cur, warnStyle.Render("secret:"),
-				dimStyle.Render(strings.Join(envs, ", ")+"  (enter/s to seal)"))
+			fmt.Fprintf(&b, "%s      %s %s\n", cur, warnStyle.Render("auth:"),
+				dimStyle.Render(strings.Join(envs, ", ")+"  (enter/a to set up)"))
 		}
 	}
 
 	b.WriteByte('\n')
-	help := "↑/↓ move · space toggle · enter expand/edit · s seal · ! shell · w save · q quit"
+	help := "↑/↓ move · space toggle · enter expand/edit · a auth · ! shell · w save · q quit"
 	if m.dirty {
 		help = warnStyle.Render("● unsaved") + " · " + help
 	}

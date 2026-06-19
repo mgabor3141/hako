@@ -21,7 +21,10 @@ type Setting struct {
 type Manifest struct {
 	Name    string `toml:"name"`
 	Summary string `toml:"summary"`
-	Skill   *struct {
+	// AuthGuide is multi-line setup help shown before `hako auth <name>` prompts
+	// for a secret (e.g. where to make a token and which scopes to grant).
+	AuthGuide string `toml:"auth_guide"`
+	Skill     *struct {
 		Dir      string   `toml:"dir"`
 		Commands []string `toml:"commands"`
 	} `toml:"skill"`

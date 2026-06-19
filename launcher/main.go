@@ -66,7 +66,7 @@ func main() {
 		if cfg.HasVault() {
 			unlock(cfg)
 		}
-		fmt.Printf("hako: up -- gmux UI at %s  (run 'hako auth' for the token)\n", gmuxURL)
+		fmt.Printf("hako: up -- gmux UI at %s  (run 'hako token' for the UI token)\n", gmuxURL)
 	case "down":
 		// --remove-orphans so down cleans up every container in the hako project,
 		// including sidecars from integrations disabled since they were started.
@@ -88,18 +88,18 @@ func main() {
 		run("docker", shellArgs()...)
 	case "pi":
 		run("docker", "exec", "-it", agentContainer, "gmux", "pi")
-	case "auth":
+	case "token":
 		dc(files, "exec", "hako", "gmuxd", "auth")
 	case "open":
 		openBrowser(gmuxURL)
 	case "version", "--version":
 		fmt.Printf("hako %s\n", version)
-	case "seal":
+	case "auth":
 		name := "github"
 		if len(args) > 0 {
 			name = args[0]
 		}
-		seal(cfg, name)
+		setupAuth(cfg, name)
 	case "unlock":
 		if !cfg.HasVault() {
 			fatal("no vault (vault/*.age) found")
@@ -205,18 +205,18 @@ func usage(cfg *Config) {
 	fmt.Print(`hako -- launcher for the agent stack
 
   new here? run 'hako configure' for an interactive menu
-  (toggle integrations, set options, seal secrets, drop to a shell)
+  (toggle integrations, set options, set up auth, drop to a shell)
 
 usage: hako <command> [args]
 
-  up [--build]    assemble + start (detached); unseals the vault if present
+  up [--build]    assemble + start (detached); unlocks credentials if present
   down            stop and remove the stack
   restart         down, then up
   assemble        (re)generate the stack from hako.toml (skills + gateway config)
-  configure       enable/disable integrations + set settings + seal secrets (TUI)
-  seal [name]     encrypt a secret into the vault (default name: github)
-  unlock          re-enter the vault passphrase (after a gateway restart)
-  ps | logs [svc] | shell | pi | auth | open | version
+  configure       enable/disable integrations + set options + set up auth (TUI)
+  auth [name]     set up an integration's credentials (default name: github)
+  unlock          re-enter the credentials passphrase (after a gateway restart)
+  ps | logs [svc] | shell | pi | token | open | version
   <other>         passed straight through to docker compose
 
 integrations (integrations/, toggled in hako.toml):

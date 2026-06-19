@@ -9,12 +9,12 @@
   digest-pinned `golang` container) and caches it by source hash. The
   `hako`->`help` rename is done. The `configure` TUI
   (Phase B) is **built** (bubbletea: toggle integrations, set typed settings,
-  seal secrets, writes hako.toml). **Delivery** is build-from-source, cached by
+  set up auth, writes hako.toml). **Delivery** is build-from-source, cached by
   source hash -- no release pipeline and no downloaded binary, so the binary
   never skews from the source you pulled.
 
 ## Context
-The default secret model needs an interactive unseal, MCP servers need guided
+The default secret model needs an interactive unlock, MCP servers need guided
 setup, and a first-timer shouldn't have to know `docker compose`. Something on
 the host has to orchestrate the human-facing flow.
 
@@ -23,9 +23,9 @@ Ship a host-side **`hako` Go binary** as the front door. `hako up`:
 - runs `docker compose up` (agent + gateway sidecar),
 - opens the gmux dashboard in **Chromium `--app` mode** if available, else the
   default browser (lifting gmux's `cli/gmux/cmd/gmux/browser.go`),
-- **unseals the vault** (masked passphrase prompt; the host decrypts in-process
+- **unlocks the vault** (masked passphrase prompt; the host decrypts in-process
   and feeds the gateway's tmpfs — ADR-0011),
-- and provides **`hako configure`** (a TUI) to enable integrations and seal their
+- and provides **`hako configure`** (a TUI) to enable integrations and set up their
   secrets into the `age` vault, never on a command line.
 
 `docker compose up` stays available for power users; `hako up` is the documented

@@ -1,24 +1,32 @@
 # Production readiness
 
 hako is validated end to end (pi + container + gmux + the MCP gateway + the
-approval gate + the age vault + the integration catalog, against the GitHub
-hosted MCP and a mock). It is a working prototype, not yet something to point at
-real credentials and forget about. This is the honest list of placeholders,
-known rough edges, and one-time steps to close before that.
+approval gate + the age vault + the integration catalog) against GitHub's hosted
+MCP, the websearch and webview sidecars, and an office document round-trip. It is
+a working prototype, not yet something to point at real credentials and forget
+about. This is the honest list of caveats, known rough edges, and one-time steps
+to close before that.
 
 ## Before you trust it with real credentials
 
-- **Set up real credentials under a strong passphrase.** `hako auth github` with your
-  own token and a real passphrase. (Development used a throwaway, read-only token
-  under a throwaway passphrase, both since retired/revoked.)
-- **The secret reaches mcp-proxy as a process env var.** `hako unlock` decrypts
-  on the host (locked buffer) and pipes the env in; the gateway sources it, so
-  the value is in the mcp-proxy process environment. It is *not* in
-  `docker inspect` (the compose env is blank) but it is readable via
-  `/proc/<pid>/environ` by root inside the gateway. Closing this needs an
-  mcp-proxy change to read the secret from a file/fd instead of the environment.
-  (memguard locks the host-side blob; parsed Go string values still transit the
-  heap -- a Go-language limitation.)
+- **Set up real credentials under a strong passphrase.** `hako auth github` with
+  your own token and a real passphrase. (Development used a throwaway, read-only
+  token under a throwaway passphrase, both since retired/revoked.)
+- **The secret reaches the gateway as a process env var.** `hako up` (and `hako
+  unlock`) decrypts on the host (locked buffer) and pipes the env in; the gateway
+  sources it, so the value lives in the mcp-proxy process environment. It is *not*
+  in `docker inspect` (the compose env is blank) but it is readable via
+  `/proc/<pid>/environ` by root inside the gateway container. Closing this needs
+  an mcp-proxy change to read the secret from a file/fd instead of the
+  environment. (memguard locks the host-side blob; parsed Go string values still
+  transit the heap -- a Go-language limitation.)
+- **The agent holds exactly one credential, on purpose.** Everything else is
+  credential-absence-plus-approval. Git *push* is the one bounded exception
+  (ADR-0015): a transport-only, human-provisioned, Contents-scoped PAT that lives
+  in the bind-mounted home (`~/.git-credentials`). It is deliberately narrower
+  than the gateway, opening/merging PRs is still approval-gated through the
+  `github` tool, and `main` should be branch-protected so a push cannot land
+  unreviewed.
 
 ## The gateway
 
@@ -31,11 +39,16 @@ known rough edges, and one-time steps to close before that.
 
 ## Integrations / composability
 
-- **websearch ships a mock.** The bundled sidecar is `hashicorp/http-echo`
-  returning two canned results -- it demonstrates the sidecar + typed-settings
-  mechanism, it does not search. Point `url` at a real endpoint (and adjust the
-  skill's response parsing) or wire a real backend (e.g. SearXNG) before relying
-  on it.
+- **websearch and webview are real sidecars you start.** websearch is a SearXNG
+  instance; webview is crawl4ai. Both images are digest-pinned (ADR-0008).
+  SearXNG's rate limiter is intentionally off for single-user local use -- fine
+  on a private host, reconsider before exposing it.
+- **office has no render/verify loop, by design.** It is pure-Python (python-docx
+  / openpyxl / python-pptx): the agent builds documents structurally and verifies
+  by re-reading them, but cannot *see* a rendered page (so e.g. a formula reads
+  back as its literal string, not its computed value). Fidelity rendering would
+  mean LibreOffice (~1 GB) or an unvetted binary, deliberately out of scope. This
+  is a scope choice, not a placeholder, and its SKILL.md says so.
 
 ## Approval UX
 
@@ -50,11 +63,16 @@ known rough edges, and one-time steps to close before that.
   digest-pinned `golang` container), cached by source hash -- no release
   pipeline, no downloaded binary. The container path is verified on Linux/amd64;
   mac/WSL2 and arm64 are designed-for but unverified on those hosts.
-- The `configure` TUI's **seal path** uses the standard `tea.ExecProcess` pattern
+- **Pins are paired with a cadence -- once you switch it on.** Images and tools
+  are digest/version-pinned (ADR-0008) and `renovate.json` is committed, so
+  Renovate raises update PRs. Pinning only pays off with the cadence, so enable
+  the Mend app (or a self-hosted `renovatebot/github-action`) on the repo.
+- The `configure` TUI's **auth path** uses the standard `tea.ExecProcess` pattern
   but has not been driven through a full interactive session in CI.
 
 ## Tested against
 
-- One real upstream (GitHub's hosted MCP) via a read-only token. Other MCP
+- GitHub's hosted MCP via a read-only token; the websearch (SearXNG) and webview
+  (crawl4ai) sidecars; and an office .docx/.xlsx/.pptx round-trip. Other MCP
   servers, other OSes (mac/WSL2 are designed-for but unverified), and arm64 have
   not been exercised.

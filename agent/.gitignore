@@ -8,6 +8,7 @@
 # ...except this file, the shell config, and the shipped pi opinions.
 !.gitignore
 !.zshrc
+!.default-python-packages
 !.pi/
 .pi/*
 !.pi/agent/

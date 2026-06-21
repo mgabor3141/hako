@@ -10,6 +10,8 @@
 # runtimes (node is kept as a general tool; pi itself runs under bun, below)
 node   = "22"
 bun    = "latest"
+# On install, mise also pip-installs the pinned libs in ~/.default-python-packages
+# (python-docx / openpyxl / python-pptx, for the office skill).
 python = "3.12"
 
 # CLI toolchain (aqua-backed: GitHub releases + checksums)

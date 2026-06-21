@@ -1,0 +1,6 @@
+# Pure-Python Office libraries -- no Office suite, no render engine. Installed on
+# first use into the mise-managed (persistent) Python; see SKILL.md. Floors, not
+# exact pins: these are stable, mature libraries.
+python-docx>=1.1.0
+openpyxl>=3.1.0
+python-pptx>=1.0.0

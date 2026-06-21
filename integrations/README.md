@@ -37,3 +37,8 @@ cd <name>/skill && bun test.ts
 
 These are opinionated and meant to be edited directly; hako is fork-and-`git
 pull`, so your edits surface as merge conflicts rather than silent clobbers.
+
+Not every skill is a gateway adapter. An **instructional** skill ships only a
+`SKILL.md` (no CLI) and teaches the agent to use what's already in the
+container -- e.g. `office`, which has pi write short Python against bundled
+libraries (python-docx / openpyxl / python-pptx) installed on first use.

@@ -8,6 +8,11 @@
 [integrations.github]
 enabled = true
 
+# Create/read/edit Word, Excel, and PowerPoint files with pure-Python libraries
+# (installed on first use). Light, no credentials, no render engine.
+[integrations.office]
+enabled = true
+
 # Web search via a bundled SearXNG sidecar (or your own endpoint).
 [integrations.websearch]
 enabled = false

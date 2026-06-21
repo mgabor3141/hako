@@ -1,0 +1,11 @@
+name    = "office"
+summary = "Create, read, and edit Word/Excel/PowerPoint files with pure-Python libraries -- no Office suite, no render engine."
+
+# An INSTRUCTIONAL skill: no CLI, no gateway, no sidecar. pi writes short Python
+# against mature libraries (python-docx, openpyxl, python-pptx) that operate on
+# the agent's own files. The libs install on first use into the mise-managed
+# (persistent) Python -- see skill/SKILL.md and skill/requirements.txt. There is
+# deliberately no renderer here; that path is heavy (LibreOffice ~1 GB) and is a
+# separate, opt-in decision.
+[skill]
+dir = "skill"

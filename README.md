@@ -1,31 +1,30 @@
 # hako
 
 **An opinionated, sandboxed home for a coding agent.** Clone it, bring your own
-agent credentials, and you get **pi** running in a container with live browser
-access — without handing the agent your host or your keys. Customize by forking.
+agent credentials, and you get **pi** running in a container you watch and steer
+from your browser -- without handing the agent your host or your keys. Fork it to
+make it yours.
 
 ## Quickstart
 
 ```sh
 git clone https://github.com/mgabor3141/hako && cd hako
-docker compose up -d                  # build + start; gmux on :8791
-# first start installs the dev toolchain into the home (~15s, in the background)
-docker compose exec hako gmuxd auth   # prints a login URL + token
-# open http://localhost:8791, authenticate, then:
-docker compose exec hako gmux pi      # launch the agent (authenticate it once)
+./hako up            # build + start; the first run installs the toolchain (~15s)
+./hako token         # print a login URL + token for the browser UI
+# open http://localhost:8791, sign in, then:
+./hako pi            # launch the agent (authenticate your provider once)
 ```
 
-Your pi sessions show up live at <http://localhost:8791>. There's also a host
-launcher — `./hako up`, `./hako shell`, `./hako pi`, … (run `./hako` for the
-list). `./hako` is a bootstrap that builds a small Go binary (with host Go, or in
-a pinned container if you don't have Go -- Docker is enough), caches it, then
-assembles your enabled integrations and drives the stack.
+Your pi sessions show up live at <http://localhost:8791>. `./hako` is a tiny
+bootstrap that builds a small Go binary (with your Go, or in a pinned container
+-- Docker is enough), then assembles your enabled integrations and drives
+`docker compose`. Run `./hako` on its own for the full command list.
 
 **Windows / WSL2:** run from inside your WSL2 distro (Docker Desktop WSL
-integration on) and **clone into the Linux home (`~`), not `/mnt/c/...`** — bind
+integration on) and **clone into the Linux home (`~`), not `/mnt/c/...`** -- bind
 mounts and permissions only behave on the native filesystem.
 
-## Architecture
+## How it works
 
 ```mermaid
 flowchart LR
@@ -52,125 +51,76 @@ flowchart LR
     gw -.->|"approve?"| gmuxd
 ```
 
-- **Your fork is the unit of customization.** `./agent/` is **bind-mounted as
-  the agent's entire home**, so config, projects, and scratch all live in the
-  repo. Nothing on your host (including `~/.pi`) is touched.
-- **The agent holds no host credentials** — the security boundary is the
-  *absence* of secrets, not behavior restrictions. When it needs a real tool it
-  goes through the **MCP gateway**, which holds the creds and gates sensitive
-  calls behind your approval (a `y/N` session in the gmux dashboard). Which tools
-  exist is set by the **integrations** you enable (below).
-
-## Tools
-
-hako leans on a few well-chosen tools so it stays small and legible:
-
-- **Docker (Compose)** — the only thing you install on the host. Runs the
-  sandbox and the private network between the agent and the gateway.
-- **pi** — the coding agent you actually use; preconfigured with hako's opinions
-  in `agent/.pi/agent/`. Bring your own provider; hako ships no credentials.
-- **gmux** — browser access to terminal sessions: watch and attach to the agent
-  live at `:8791` (loopback-only, token-authed).
-- **mise** — pins and installs the in-home dev toolchain (node, bun, python,
-  ripgrep, fd, jj, …) from a lockfile. It also enforces a **supply-chain release
-  delay**: a new release isn't adopted until it has been public for ≥24h, so a
-  freshly-compromised version can be caught or yanked before hako installs it.
-- **bun** — runs pi and the MCP CLI adapters (one fast binary, no node_modules
-  churn). `pi update` is rerouted through mise so the pinned core stays pinned.
-- **MCP gateway** — a fork of [`mcp-proxy`](https://github.com/TBXark/mcp-proxy)
-  that holds upstream credentials and exposes tools to the agent over the private
-  network, gating chosen calls behind a swappable approval hook (default: a `y/N`
-  session in the gmux dashboard). The agent's CLI **adapters** come from the
-  `integrations/` catalog and never see the keys.
-- **hako (the launcher)** — `./hako` bootstraps a small Go binary that assembles
-  your enabled integrations, wraps `docker compose`, and unlocks the vault. Plain
-  `docker compose` still works for the basics.
+- **Your fork is the unit of customization.** `./agent/` is bind-mounted as the
+  agent's entire home -- config, projects, and scratch all live in the repo.
+  Nothing on your host (including `~/.pi`) is touched.
+- **The agent holds no credentials.** The boundary is the *absence* of secrets,
+  not behavior rules. For a real tool it goes through the **MCP gateway**, which
+  holds the credentials and gates sensitive calls behind your approval -- a `y/N`
+  that appears as a session in the gmux dashboard. Which tools exist is up to the
+  **integrations** you enable.
+- **Reproducible and pinned.** The in-home toolchain is locked (`mise.lock`) and
+  the gateway image is digest-pinned; mise also waits ~24h before adopting a new
+  release, so a freshly compromised version can be caught or yanked before hako
+  installs it.
 
 ## Integrations
 
-What the agent can reach is **composable**. Each tool lives in `integrations/` —
-a skill the agent calls, an optional gateway backend, an optional sidecar
-container, plus any secrets/settings it needs. You turn them on in **`hako.toml`**
-(gitignored, so picking tools is never a fork or a merge conflict); disabled ones
-are invisible to the agent — no skill in its context, no gateway route, no
-sidecar.
+What the agent can reach is composable. Each lives in `integrations/` -- a skill
+the agent calls, plus whatever it needs (a gateway backend, a sidecar, secrets)
+-- and you toggle them in **`hako.toml`** (gitignored, so choosing tools is never
+a merge conflict). Disabled ones are invisible to the agent: no skill, no gateway
+route, no sidecar.
 
 ```sh
-./hako configure       # a TUI to toggle integrations, set options, set up auth
-./hako up              # assembles only the enabled integrations
+./hako configure     # TUI: toggle integrations, set options, set up auth
+./hako up            # assemble + start only what's enabled
 ```
 
 Shipped today: **github** (PRs/issues/CI through the gateway), **websearch** (a
-bundled SearXNG sidecar), and **webview** (read a page's main content as
-markdown via a crawl4ai sidecar; off by default -- heavy image). Add more by
-dropping a folder in `integrations/` — see
-[`integrations/README.md`](./integrations/README.md).
+SearXNG sidecar), and **webview** (read a page as markdown via crawl4ai; off by
+default -- heavy image). Add your own by dropping a folder in `integrations/` --
+see [`integrations/README.md`](./integrations/README.md).
 
-## Secrets
+## Credentials
 
-The agent holds none. Credentials live in a single **age-encrypted vault**
-(`vault/secrets.age`) under **one passphrase**, and only the gateway gets them —
-decrypted on your host at unlock time and handed straight to the gateway, never
-written to disk.
+The agent holds none. Tokens live in a single **age-encrypted vault** under one
+passphrase, decrypted on your host at unlock time and handed straight to the
+gateway -- never written to disk.
 
 ```sh
-./hako auth github     # set up a token (guided); pick a passphrase to protect it
-./hako up              # prompts for the passphrase and unlocks
-./hako unlock          # re-enter it after a gateway restart (which re-locks)
+./hako auth github   # guided: which token + scopes to create; sets a passphrase
+./hako up            # prompts for the passphrase and unlocks
+./hako unlock        # re-enter it after a gateway restart
 ```
 
-`hako auth <integration>` walks you through what credential to create and which
-scopes to grant (e.g. GitHub fine-grained token permissions).
-
-## Handy in the shell
-
-The human shell (zsh) ships some niceties — run `help` inside the container for
-the full, colorized list:
-
-- `Ctrl-R` fuzzy history, `Ctrl-T` file picker, `Alt-C` fuzzy `cd` (fzf)
-- `→` / `End` accepts the grey autosuggestion from your history
-- `z <name>` jumps to a frequent dir (zoxide); a bare dir name `cd`s into it
-- `ls`/`ll`/`la`/`lt`/`l.` are [eza](https://eza.rocks); `bat` and `man` are syntax-highlighted
-
-pi itself always runs plain `/bin/bash` with stock `ls`/`grep`, so commands it
-hands you paste-and-run unchanged.
+`hako auth <integration>` walks you through exactly what to create and which
+scopes to grant.
 
 ## Customizing
 
-hako is meant to be **forked and `git pull`ed** — opinions, including the pinned
-`mise.lock`, surface as merge conflicts you resolve.
+hako is meant to be **forked and `git pull`ed** -- opinions (including the pinned
+`mise.lock`) surface as merge conflicts you resolve.
 
-- **pi config:** `agent/.pi/agent/settings.json` — live (restart to reconcile).
-- **toolchain:** add tools to `agent/.config/mise/config.toml`, then
-  `mise install` (or restart) — live.
-- **OS image:** `container/Dockerfile` — needs `docker compose up -d --build`.
+- **agent + pi config:** edit under `agent/` (e.g. `agent/.pi/agent/settings.json`);
+  live on restart.
+- **toolchain:** add tools to `agent/.config/mise/config.toml`, then `mise install`.
+- **OS image:** `container/Dockerfile` -- rebuild with `./hako up --build`.
 
-The configuring agent's guide is [`AGENTS.md`](./AGENTS.md); design decisions
-live in [`docs/`](./docs/).
+The guide for an agent customizing hako is [`AGENTS.md`](./AGENTS.md); design
+decisions live in [`docs/`](./docs/).
 
-## Backups (optional)
+## More
 
-Off by default. To snapshot the agent home to a repo the agent can't reach,
-follow [`docs/backups.md`](./docs/backups.md) (a restic sidecar) — or just hand
-that file to your agent.
-
-## Drive it from your editor (ACP)
-
-An editor that speaks the [Agent Client Protocol](https://agentclientprotocol.com)
-(e.g. Zed) can drive the **sandboxed** pi over `docker exec -i hako pi-acp` — you
-get the editor's chat/diff UI while the agent stays in the container (zero
-credentials, gateway + approval gate intact). See [`docs/acp.md`](./docs/acp.md).
-
-## Roadmap
-
-- **Phase 1 — pi + container + gmux** *(done)*: clone-and-up opinionated pi.
-- **Phase 2 — governed tools** *(done)*: the MCP gateway, per-call approval (in
-  gmux), composable integrations, and the age vault — the agent reaches real
-  tools holding no credentials.
-- **Next:** hardening for real-credential use (see below), broader integrations,
-  and mac/WSL2 verification.
-
-hako is a working prototype, not yet hardened for real-credential use —
-[`docs/production-readiness.md`](docs/production-readiness.md) is the honest list
-of placeholders and rough edges (mock search backend, digest pinning, the dev
-vault's throwaway secret, …).
+- **Shell niceties** -- the human shell (zsh) has fzf history/file-picker,
+  autosuggestions, zoxide, and eza/bat; run `help` inside the container. pi itself
+  always runs plain bash with stock tools, so commands it hands you paste-and-run
+  unchanged.
+- **Let the agent push** -- set up a scoped, transport-only git credential (the
+  one deliberate exception to zero-cred): [`docs/git.md`](./docs/git.md).
+- **Drive it from your editor** over [ACP](https://agentclientprotocol.com) (e.g.
+  Zed): [`docs/acp.md`](./docs/acp.md).
+- **Back up** the agent home to a repo it can't reach: [`docs/backups.md`](./docs/backups.md).
+- **Not yet hardened for real-credential use** --
+  [`docs/production-readiness.md`](./docs/production-readiness.md) is the honest
+  list of rough edges.

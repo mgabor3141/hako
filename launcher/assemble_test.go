@@ -68,3 +68,71 @@ enabled = false
 		t.Errorf(".hako.env missing setting:\n%s", env)
 	}
 }
+
+// ~/.agents/skills is shared with skills the user or agent installs by hand.
+// assemble must reconcile only its own catalog links and never wipe those.
+func TestAssemblePreservesHandInstalledSkills(t *testing.T) {
+	root := t.TempDir()
+	writeAt(t, filepath.Join(root, "gateway/config.base.json"),
+		`{"mcpProxy":{"addr":":8096"},"mcpServers":{}}`)
+	writeAt(t, filepath.Join(root, "integrations/foo/integration.toml"),
+		"name = \"foo\"\nsummary = \"foo\"\n[skill]\n")
+	writeAt(t, filepath.Join(root, "integrations/foo/skill/SKILL.md"), "# foo")
+	writeAt(t, filepath.Join(root, "hako.toml"), "[integrations.foo]\nenabled = true\n")
+
+	// a skill the user/agent installed by hand into the shared dir
+	mine := filepath.Join(root, "agent/.agents/skills/mine/SKILL.md")
+	writeAt(t, mine, "# mine")
+
+	cfg, err := LoadConfig(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// run twice: reconcile must be idempotent and never wipe the hand-installed skill
+	for i := 1; i <= 2; i++ {
+		if err := assemble(cfg); err != nil {
+			t.Fatalf("assemble #%d: %v", i, err)
+		}
+		if _, err := os.Stat(mine); err != nil {
+			t.Fatalf("hand-installed skill wiped on assemble #%d: %v", i, err)
+		}
+		tgt, err := os.Readlink(filepath.Join(root, "agent/.agents/skills/foo"))
+		if err != nil || tgt != catalogMount+"/foo/skill" {
+			t.Fatalf("foo link after assemble #%d: tgt=%q err=%v", i, tgt, err)
+		}
+	}
+}
+
+// A hand-installed skill that happens to share a catalog integration's name must
+// not be clobbered by the catalog symlink.
+func TestAssembleSkipsNameCollision(t *testing.T) {
+	root := t.TempDir()
+	writeAt(t, filepath.Join(root, "gateway/config.base.json"),
+		`{"mcpProxy":{"addr":":8096"},"mcpServers":{}}`)
+	writeAt(t, filepath.Join(root, "integrations/foo/integration.toml"),
+		"name = \"foo\"\nsummary = \"foo\"\n[skill]\n")
+	writeAt(t, filepath.Join(root, "integrations/foo/skill/SKILL.md"), "# foo")
+	writeAt(t, filepath.Join(root, "hako.toml"), "[integrations.foo]\nenabled = true\n")
+
+	// user installed their own "foo" (a real dir) before enabling the catalog one
+	foo := filepath.Join(root, "agent/.agents/skills/foo")
+	writeAt(t, filepath.Join(foo, "SKILL.md"), "# my own foo")
+
+	cfg, err := LoadConfig(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := assemble(cfg); err != nil {
+		t.Fatal(err)
+	}
+	fi, err := os.Lstat(foo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fi.Mode()&os.ModeSymlink != 0 {
+		t.Error("assemble clobbered a hand-installed skill that shares a catalog name")
+	}
+	if b, _ := os.ReadFile(filepath.Join(foo, "SKILL.md")); string(b) != "# my own foo" {
+		t.Errorf("hand-installed foo content changed: %q", b)
+	}
+}

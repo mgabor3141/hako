@@ -40,13 +40,26 @@ func composeFiles(cfg *Config) []string {
 func assemble(cfg *Config) error {
 	enabled := cfg.Enabled()
 
-	// 1. pi's skill dir: only enabled skills, symlinked to the mounted catalog.
+	// 1. pi's skill dir (~/.agents/skills) holds one symlink per enabled
+	// integration, pointing into the mounted catalog. This dir is the cross-tool
+	// convention, shared with skills the user or agent installs by hand -- so we
+	// reconcile ONLY our own links (those targeting the catalog mount) and leave
+	// real directories and foreign symlinks untouched.
 	skillDir := filepath.Join(cfg.Root, "agent", ".agents", "skills")
-	if err := os.RemoveAll(skillDir); err != nil {
-		return err
-	}
 	if err := os.MkdirAll(skillDir, 0o755); err != nil {
 		return err
+	}
+	entries, err := os.ReadDir(skillDir)
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		p := filepath.Join(skillDir, e.Name())
+		if isCatalogLink(p) {
+			if err := os.Remove(p); err != nil {
+				return err
+			}
+		}
 	}
 	for _, it := range enabled {
 		if it.Skill == nil {
@@ -56,8 +69,14 @@ func assemble(cfg *Config) error {
 		if sub == "" {
 			sub = "skill"
 		}
+		link := filepath.Join(skillDir, it.Name)
+		if _, err := os.Lstat(link); err == nil {
+			// a hand-installed skill claims this name; don't clobber it.
+			fmt.Printf("hako: skill %q already present (not a hako link) -- leaving it\n", it.Name)
+			continue
+		}
 		target := fmt.Sprintf("%s/%s/%s", catalogMount, it.Name, sub)
-		if err := os.Symlink(target, filepath.Join(skillDir, it.Name)); err != nil {
+		if err := os.Symlink(target, link); err != nil {
 			return err
 		}
 	}
@@ -148,4 +167,12 @@ func orNone(s string) string {
 		return "none"
 	}
 	return s
+}
+
+// isCatalogLink reports whether p is a symlink hako created -- one pointing into
+// the mounted catalog. Hand-installed skills (real directories, or symlinks
+// pointing elsewhere) return false and are left untouched on reconcile.
+func isCatalogLink(p string) bool {
+	target, err := os.Readlink(p)
+	return err == nil && strings.HasPrefix(target, catalogMount+"/")
 }

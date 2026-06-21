@@ -1,0 +1,7 @@
+name    = "troubleshooting"
+summary = "Where to look when the hako environment fails, and what the agent can fix itself vs must ask the human."
+
+# Instructional skill (SKILL.md only, no CLI/gateway/sidecar). Meta-help about
+# operating inside hako; loaded on-demand via its description. Enabled by default.
+[skill]
+dir = "skill"

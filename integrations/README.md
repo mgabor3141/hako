@@ -40,5 +40,6 @@ pull`, so your edits surface as merge conflicts rather than silent clobbers.
 
 Not every skill is a gateway adapter. An **instructional** skill ships only a
 `SKILL.md` (no CLI) and teaches the agent to use what's already in the
-container -- e.g. `office`, which has pi write short Python against bundled
-libraries (python-docx / openpyxl / python-pptx) installed on first use.
+container -- e.g. `office` (pi writes short Python against bundled python-docx /
+openpyxl / python-pptx) or `troubleshooting` (where to look when the environment
+fails, and what to fix vs ask the human about).

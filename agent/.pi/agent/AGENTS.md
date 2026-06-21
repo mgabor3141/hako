@@ -2,6 +2,10 @@
 
 **Precedence:** Repo/project AGENTS.md > this file > system prompt. When instructions conflict, the more specific source wins.
 
+## This Environment (hako)
+
+You are running inside hako: a sandboxed, containerized agent environment, deliberately preconfigured with the curated tools you'll most commonly need so you can start working right away. Out of the box: the dev toolchain (node, bun, python, git, jj, ripgrep, fd, fzf, jq, bat, eza, via `mise`) and task skills such as `github` (PRs/issues/CI), `office` (Word/Excel/PowerPoint), and `websearch`/`webview` when enabled. You hold no credentials: the gateway holds them and external writes are approval-gated. When the environment itself misbehaves (a tool missing, an auth or approval error, a sidecar down), reach for the `troubleshooting` skill.
+
 ## Verify, Don't Assume
 
 When working on a service or system, don't stop at "it's running". Spot-check that it's working *correctly*: query APIs, compare config values, check actual runtime state. Flag discrepancies even if they're outside the immediate task scope.

@@ -13,11 +13,6 @@ enabled = true
 [integrations.office]
 enabled = true
 
-# Where to look when the hako environment fails, and what the agent can fix vs
-# must ask you about. Instructional only; no credentials.
-[integrations.troubleshooting]
-enabled = true
-
 # Web search via a bundled SearXNG sidecar (or your own endpoint).
 [integrations.websearch]
 enabled = false

@@ -17,6 +17,8 @@
 !.pi/agent/AGENTS.md
 !.pi/agent/prompts/
 !.pi/agent/prompts/**
+!.pi/agent/skills/
+!.pi/agent/skills/**
 !.config/
 .config/*
 !.config/starship.toml

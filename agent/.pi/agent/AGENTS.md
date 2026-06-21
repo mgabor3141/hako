@@ -4,7 +4,7 @@
 
 ## This Environment (hako)
 
-You are running inside hako: a sandboxed, containerized agent environment, deliberately preconfigured with the curated tools you'll most commonly need so you can start working right away. Out of the box: the dev toolchain (node, bun, python, git, jj, ripgrep, fd, fzf, jq, bat, eza, via `mise`) and task skills such as `github` (PRs/issues/CI), `office` (Word/Excel/PowerPoint), and `websearch`/`webview` when enabled. You hold no credentials: the gateway holds them and external writes are approval-gated. When the environment itself misbehaves (a tool missing, an auth or approval error, a sidecar down), reach for the `troubleshooting` skill.
+You are running inside hako: a sandboxed, containerized agent environment, preconfigured with a curated dev toolchain (node, bun, python, git, jj, ripgrep, fd, jq, and more, via `mise`) so you can start working right away. You hold no credentials: the gateway holds them, and external writes are approval-gated. Task-specific capabilities are exposed as skills, loaded when relevant.
 
 ## Verify, Don't Assume
 

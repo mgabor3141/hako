@@ -31,3 +31,14 @@ enabled = false
 [integrations.backups]
 enabled = false
 # interval = 900                      # seconds between snapshots
+
+# Extra external docker networks the stack joins. Use this when an integration
+# points at your own private endpoint (sidecar = false, url = ...) that is only
+# reachable by docker service DNS -- e.g. another compose project's SearXNG. The
+# networks must already exist (external); typically they are named
+# <project>_default. `agent` nets attach to the hako container (skill
+# integrations that call the endpoint directly, like websearch); `gateway` nets
+# attach to the gateway container (a private MCP backend it fronts).
+# [networks]
+# agent = ["searxng_default"]          # hako reaches http://searxng:8080
+# gateway = []                         # gateway reaches a private MCP by DNS

@@ -51,14 +51,27 @@ type Integration struct {
 	Values  map[string]string // resolved settings (user override, else default)
 }
 
+// Networks lists extra external docker networks the stack joins, so an
+// integration pointed at a private endpoint (sidecar = false, url = ...) can
+// resolve it by service DNS. Agent nets attach to the hako container (the usual
+// case: skill integrations call the endpoint directly); gateway nets attach to
+// the gateway container (a private MCP backend it fronts). The networks must
+// already exist (external) -- typically another compose project's <name>_default.
+type Networks struct {
+	Agent   []string `toml:"agent"`
+	Gateway []string `toml:"gateway"`
+}
+
 type Config struct {
-	Root string
-	Ints []*Integration // every catalog integration, Enabled reflecting hako.toml
+	Root     string
+	Ints     []*Integration // every catalog integration, Enabled reflecting hako.toml
+	Networks Networks       // extra external networks from [networks] in hako.toml
 }
 
 // hakoFile is the structure of hako.toml / hako.example.toml.
 type hakoFile struct {
 	Integrations map[string]map[string]any `toml:"integrations"`
+	Networks     Networks                  `toml:"networks"`
 }
 
 func LoadConfig(root string) (*Config, error) {
@@ -110,7 +123,13 @@ func LoadConfig(root string) (*Config, error) {
 		cfg.Ints = append(cfg.Ints, it)
 	}
 	sort.Slice(cfg.Ints, func(i, j int) bool { return cfg.Ints[i].Name < cfg.Ints[j].Name })
+	cfg.Networks = hf.Networks
 	return cfg, nil
+}
+
+// hasExtraNetworks reports whether any external network is configured.
+func (c *Config) hasExtraNetworks() bool {
+	return len(c.Networks.Agent) > 0 || len(c.Networks.Gateway) > 0
 }
 
 func (c *Config) Enabled() []*Integration {

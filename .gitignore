@@ -9,6 +9,7 @@ vault/
 hako.toml
 gateway/config.json
 .hako.env
+.hako.networks.yaml
 # compiled launcher binary (built from launcher/*.go)
 launcher/hako
 

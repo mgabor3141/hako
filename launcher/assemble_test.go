@@ -136,3 +136,70 @@ func TestAssembleSkipsNameCollision(t *testing.T) {
 		t.Errorf("hand-installed foo content changed: %q", b)
 	}
 }
+
+// [networks] in hako.toml must produce a compose overlay that declares each
+// referenced network external and attaches it to the right service, with
+// `default` kept so the agent<->gateway boundary survives. The overlay must
+// also appear in the -f list, and disappear (file + -f entry) when unset.
+func TestAssembleNetworksOverlay(t *testing.T) {
+	root := t.TempDir()
+	writeAt(t, filepath.Join(root, "gateway/config.base.json"),
+		`{"mcpProxy":{"addr":":8096"},"mcpServers":{}}`)
+	writeAt(t, filepath.Join(root, "hako.toml"), `
+[networks]
+agent = ["searxng_default"]
+gateway = ["mcp_private"]
+`)
+
+	cfg, err := LoadConfig(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.hasExtraNetworks() {
+		t.Fatal("hasExtraNetworks() = false, want true")
+	}
+	if err := assemble(cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	overlay := filepath.Join(root, networksOverlay)
+	body, err := os.ReadFile(overlay)
+	if err != nil {
+		t.Fatalf("overlay not written: %v", err)
+	}
+	s := string(body)
+	for _, want := range []string{
+		"searxng_default:\n    name: searxng_default\n    external: true",
+		"mcp_private:\n    name: mcp_private\n    external: true",
+		"  hako:\n    networks:\n      - default\n      - searxng_default\n",
+		"  gateway:\n    networks:\n      - default\n      - mcp_private\n",
+	} {
+		if !strings.Contains(s, want) {
+			t.Errorf("overlay missing %q:\n%s", want, s)
+		}
+	}
+
+	// overlay must be the last -f entry
+	files := composeFiles(cfg)
+	if files[len(files)-1] != networksOverlay || files[len(files)-2] != "-f" {
+		t.Errorf("composeFiles should end with -f %s, got %v", networksOverlay, files)
+	}
+
+	// clearing [networks] removes the overlay file and the -f entry
+	writeAt(t, filepath.Join(root, "hako.toml"), "")
+	cfg2, err := LoadConfig(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := assemble(cfg2); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(overlay); !os.IsNotExist(err) {
+		t.Errorf("overlay should be removed when [networks] unset, stat err=%v", err)
+	}
+	for _, f := range composeFiles(cfg2) {
+		if f == networksOverlay {
+			t.Error("composeFiles still includes the overlay after [networks] cleared")
+		}
+	}
+}

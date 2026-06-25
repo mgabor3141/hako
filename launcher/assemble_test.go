@@ -137,19 +137,51 @@ func TestAssembleSkipsNameCollision(t *testing.T) {
 	}
 }
 
-// [networks] in hako.toml must produce a compose overlay that declares each
-// referenced network external and attaches it to the right service, with
-// `default` kept so the agent<->gateway boundary survives. The overlay must
-// also appear in the -f list, and disappear (file + -f entry) when unset.
-func TestAssembleNetworksOverlay(t *testing.T) {
+// renderNetworksOverlay is pure: given the [networks] config it must declare
+// each net external (once, even if shared) and attach it to the right service
+// with `default` listed FIRST -- that ordering is the correctness contract, it
+// keeps the agent<->gateway boundary when the merge adds the external net.
+func TestRenderNetworksOverlay(t *testing.T) {
+	t.Run("agent and gateway", func(t *testing.T) {
+		out := renderNetworksOverlay(Networks{
+			Agent:   []string{"searxng_default"},
+			Gateway: []string{"mcp_private"},
+		})
+		assertExternalNet(t, out, "searxng_default")
+		assertExternalNet(t, out, "mcp_private")
+		assertNetList(t, out, "hako", []string{"default", "searxng_default"})
+		assertNetList(t, out, "gateway", []string{"default", "mcp_private"})
+	})
+
+	t.Run("agent only omits the gateway block", func(t *testing.T) {
+		out := renderNetworksOverlay(Networks{Agent: []string{"searxng_default"}})
+		assertNetList(t, out, "hako", []string{"default", "searxng_default"})
+		if strings.Contains(out, "gateway:") {
+			t.Errorf("gateway block must be omitted when no gateway nets:\n%s", out)
+		}
+	})
+
+	t.Run("a net shared by both services is declared once", func(t *testing.T) {
+		out := renderNetworksOverlay(Networks{
+			Agent:   []string{"shared"},
+			Gateway: []string{"shared"},
+		})
+		if n := strings.Count(out, "name: shared"); n != 1 {
+			t.Errorf("shared net should be declared once, got %d:\n%s", n, out)
+		}
+		assertNetList(t, out, "hako", []string{"default", "shared"})
+		assertNetList(t, out, "gateway", []string{"default", "shared"})
+	})
+}
+
+// assemble must write the overlay and wire it as the LAST -f entry when
+// [networks] is set, and remove both the file and the -f entry when it is
+// cleared -- so a stale overlay from a previous config never lingers.
+func TestAssembleWiresAndClearsNetworksOverlay(t *testing.T) {
 	root := t.TempDir()
 	writeAt(t, filepath.Join(root, "gateway/config.base.json"),
 		`{"mcpProxy":{"addr":":8096"},"mcpServers":{}}`)
-	writeAt(t, filepath.Join(root, "hako.toml"), `
-[networks]
-agent = ["searxng_default"]
-gateway = ["mcp_private"]
-`)
+	writeAt(t, filepath.Join(root, "hako.toml"), "[networks]\nagent = [\"searxng_default\"]\n")
 
 	cfg, err := LoadConfig(root)
 	if err != nil {
@@ -161,31 +193,16 @@ gateway = ["mcp_private"]
 	if err := assemble(cfg); err != nil {
 		t.Fatal(err)
 	}
-
 	overlay := filepath.Join(root, networksOverlay)
-	body, err := os.ReadFile(overlay)
-	if err != nil {
+	if _, err := os.Stat(overlay); err != nil {
 		t.Fatalf("overlay not written: %v", err)
 	}
-	s := string(body)
-	for _, want := range []string{
-		"searxng_default:\n    name: searxng_default\n    external: true",
-		"mcp_private:\n    name: mcp_private\n    external: true",
-		"  hako:\n    networks:\n      - default\n      - searxng_default\n",
-		"  gateway:\n    networks:\n      - default\n      - mcp_private\n",
-	} {
-		if !strings.Contains(s, want) {
-			t.Errorf("overlay missing %q:\n%s", want, s)
-		}
-	}
-
-	// overlay must be the last -f entry
 	files := composeFiles(cfg)
-	if files[len(files)-1] != networksOverlay || files[len(files)-2] != "-f" {
+	if n := len(files); n < 2 || files[n-2] != "-f" || files[n-1] != networksOverlay {
 		t.Errorf("composeFiles should end with -f %s, got %v", networksOverlay, files)
 	}
 
-	// clearing [networks] removes the overlay file and the -f entry
+	// clearing [networks] must drop both the file and the -f entry
 	writeAt(t, filepath.Join(root, "hako.toml"), "")
 	cfg2, err := LoadConfig(root)
 	if err != nil {
@@ -201,5 +218,36 @@ gateway = ["mcp_private"]
 		if f == networksOverlay {
 			t.Error("composeFiles still includes the overlay after [networks] cleared")
 		}
+	}
+}
+
+func assertExternalNet(t *testing.T, overlay, name string) {
+	t.Helper()
+	if !strings.Contains(overlay, name+":\n    name: "+name+"\n    external: true") {
+		t.Errorf("overlay missing external declaration for %q:\n%s", name, overlay)
+	}
+}
+
+// assertNetList extracts the ordered network list of a service block from the
+// generated overlay and compares it (order matters: default must be first).
+func assertNetList(t *testing.T, overlay, svc string, want []string) {
+	t.Helper()
+	lines := strings.Split(overlay, "\n")
+	var got []string
+	inSvc, inNets := false, false
+	for _, ln := range lines {
+		switch {
+		case ln == "  "+svc+":":
+			inSvc = true
+		case inSvc && ln == "    networks:":
+			inNets = true
+		case inNets && strings.HasPrefix(ln, "      - "):
+			got = append(got, strings.TrimPrefix(ln, "      - "))
+		case inSvc && len(ln) > 0 && !strings.HasPrefix(ln, "   "):
+			inSvc, inNets = false, false // next top-level/sibling block
+		}
+	}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Errorf("service %q networks = %v, want %v\noverlay:\n%s", svc, got, want, overlay)
 	}
 }

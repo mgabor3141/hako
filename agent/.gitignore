@@ -19,6 +19,11 @@
 !.pi/agent/prompts/**
 !.pi/agent/skills/
 !.pi/agent/skills/**
+!.pi/agent/extensions/
+!.pi/agent/extensions/**
+# ...but re-ignore host-local files (e.g. *.local.ts personal providers/keys);
+# this allowlist re-includes extensions/**, so the root *.local* can't reach here.
+*.local*
 !.config/
 .config/*
 !.config/starship.toml

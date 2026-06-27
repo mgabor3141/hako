@@ -1,0 +1,27 @@
+#!/bin/bash
+# Install pi + hako's shipped pi config home into the Terminal-Bench task
+# container. Pinned by template vars for reproducibility (ADR-0008):
+#   pi_version = {{ pi_version }}
+#   hako_ref   = {{ hako_ref }}
+set -euo pipefail
+
+apt-get update
+apt-get install -y curl git
+
+# Node (pi is an npm package).
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
+# shellcheck disable=SC1090
+source "$HOME/.nvm/nvm.sh"
+nvm install 22
+
+npm install -g @earendil-works/pi-coding-agent@{{ pi_version }}
+
+# hako's pi config home: agent/.pi/agent/{AGENTS.md,settings.json,prompts,skills,extensions}
+# is copied to $HOME/.pi/agent so pi auto-discovers it. This is the unit under test.
+git clone --depth 1 --branch {{ hako_ref }} https://github.com/mgabor3141/hako /tmp/hako
+mkdir -p "$HOME/.pi"
+cp -r /tmp/hako/agent/.pi/. "$HOME/.pi/"
+# Sibling skills the config references (office/github/websearch) live under .agents.
+[ -d /tmp/hako/agent/.agents ] && cp -r /tmp/hako/agent/.agents "$HOME/.agents" || true
+
+pi --version

@@ -21,9 +21,9 @@
 !.pi/agent/skills/**
 !.pi/agent/extensions/
 !.pi/agent/extensions/**
-# ...but *.local.ts extensions are host-local (personal providers/keys): pi still
-# auto-loads them (they match *.ts), they're just never committed.
-.pi/agent/extensions/*.local.ts
+# ...but re-ignore host-local files (e.g. *.local.ts personal providers/keys);
+# this allowlist re-includes extensions/**, so the root *.local* can't reach here.
+*.local*
 !.config/
 .config/*
 !.config/starship.toml

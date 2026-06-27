@@ -4,7 +4,7 @@ workspace/
 compose.override.yaml
 gateway/hooks.local/
 # anything *.local is host-local and never committed (e.g. eval/.env.local with API keys)
-*.local
+*.local*
 # the age-encrypted secret vault is user data, never committed
 vault/
 # user's enabled-integration set + generated gateway config

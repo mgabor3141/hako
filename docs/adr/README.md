@@ -18,3 +18,5 @@ supersession chain); the status line notes what it supersedes.
 - [0012](0012-host-launcher.md) — Host-side `hako` launcher
 - [0013](0013-adapters-inlined.md) — The MCP CLI adapters are inlined into hako *(placement superseded by 0014)*
 - [0014](0014-integrations-as-manifests.md) — Integrations are composable manifests selected by config
+- [0015](0015-agent-git-credential.md) — The agent's git credential
+- [0016](0016-approval-via-liveness-gated-gmux-notification.md) — Tool-call approval is a liveness-gated gmux notification *(refines 0010)*

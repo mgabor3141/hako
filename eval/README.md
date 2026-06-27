@@ -67,11 +67,14 @@ Raw results are gitignored, but a PR that changes the config should cite numbers
 Commit a short summary (scores + the pins they came from) to `BASELINE.md` for
 reference runs; keep transcripts local.
 
-## Known runtime assumption to validate
+## Runtime notes
 
-The `goal` variant relies on `pi -p` continuing to process the follow-up messages
-`goal.ts` injects on `agent_end` (rather than exiting after the first turn). The
-docs say print mode "exits when all prompts are processed"; the smoke test above
-confirms the loop actually iterates. If it doesn't, drive the goal cell over
-`--mode rpc` instead (send `/goal` programmatically) — the adapter is the only
-file that changes.
+- **Headless goal loop — validated.** `pi -p` (and `--mode json`) do process the
+  follow-up messages `goal.ts` injects on `agent_end`: a local smoke run with
+  `PI_GOAL_AUTOSTART=1` autostarted the loop without `/goal` and iterated
+  (progressive nudges, agent acted on each). No `--mode rpc` fallback needed.
+- **The goal cell is slow and can run long.** The loop may approach
+  `MAX_PASSES` (10) before the proxy emits `STOP`, especially with slower/terser
+  models (the proxy takes the agent at its word and only sees prose, not tool
+  results). Budget generous per-task timeouts for the `goal` variant; watch for
+  cells that hit the task timeout rather than completing.

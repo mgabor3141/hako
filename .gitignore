@@ -21,3 +21,6 @@ dist/
 
 # compiled launcher binary from a bare `go build ./...` in launcher/
 /launcher/launcher
+
+# Benchmark run artifacts (transcripts/scores); summaries go in eval/BASELINE.md
+eval/results/
